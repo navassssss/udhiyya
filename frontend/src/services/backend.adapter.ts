@@ -23,7 +23,7 @@ import type {
   ReportKind,
 } from "../types/api";
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:3000";
+import { API_BASE } from "./api-base";
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const token = await getAuthToken();

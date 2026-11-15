@@ -42,7 +42,7 @@ import {
 // ─── Config ───────────────────────────────────────────────────────────────────
 
 const USE_MOCK = import.meta.env.VITE_USE_MOCK_API === "true" || import.meta.env.DEV;
-const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:3000";
+import { API_BASE } from "../services/api-base";
 
 // Mock network delay for realistic UX development
 const MOCK_DELAY_MS = 350;

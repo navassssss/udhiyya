@@ -6,8 +6,7 @@ import type {
   RegisterPayload,
   UserRole,
 } from "./auth.types";
-
-const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:3000";
+import { API_BASE } from "../api-base";
 
 let currentSession: NestJsJwtSession | null = null;
 let refreshPromise: Promise<string | null> | null = null;
@@ -86,7 +85,7 @@ export const jwtAdapter: AuthProviderInterface & {
 
   async signIn(email: string, password = "password") {
     try {
-      const res = await fetch(`${API_BASE}/auth/login`, {
+      const res = await fetch(`${API_BASE}/auth/email/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
@@ -118,14 +117,14 @@ export const jwtAdapter: AuthProviderInterface & {
   async signUp(payload: RegisterPayload) {
     try {
       const name = [payload.firstName, payload.lastName].filter(Boolean).join(" ") || payload.email.split("@")[0];
-      const res = await fetch(`${API_BASE}/auth/register`, {
+      const res = await fetch(`${API_BASE}/auth/email/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          name,
+          firstName: payload.firstName,
+          lastName: payload.lastName,
           email: payload.email,
           password: payload.password,
-          confirmPassword: payload.password,
         }),
       });
 
@@ -143,10 +142,10 @@ export const jwtAdapter: AuthProviderInterface & {
 
   async verifyEmail(hash: string) {
     try {
-      const res = await fetch(`${API_BASE}/auth/verify-email`, {
+      const res = await fetch(`${API_BASE}/auth/email/confirm`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token: hash }),
+        body: JSON.stringify({ hash }),
       });
       if (!res.ok && res.status !== 204) {
         throw new Error("Invalid or expired email verification link");
@@ -177,7 +176,7 @@ export const jwtAdapter: AuthProviderInterface & {
 
   async resetPassword(email: string) {
     try {
-      const res = await fetch(`${API_BASE}/auth/forgot-password`, {
+      const res = await fetch(`${API_BASE}/auth/forgot/password`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email }),
@@ -187,23 +186,23 @@ export const jwtAdapter: AuthProviderInterface & {
       }
       return { error: null };
     } catch (err: any) {
-      return { error: null };
+      return { error: err };
     }
   },
 
   async updatePassword(password: string, token = "") {
     try {
-      const res = await fetch(`${API_BASE}/auth/reset-password`, {
+      const res = await fetch(`${API_BASE}/auth/reset/password`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token, password }),
+        body: JSON.stringify({ hash: token, password }),
       });
       if (!res.ok && res.status !== 204) {
         throw new Error("Password reset failed or token expired");
       }
       return { error: null };
     } catch (err: any) {
-      return { error: null };
+      return { error: err };
     }
   },
 
@@ -242,7 +241,7 @@ export const jwtAdapter: AuthProviderInterface & {
 
   async loginWithGoogle(idToken: string) {
     try {
-      const res = await fetch(`${API_BASE}/auth/google`, {
+      const res = await fetch(`${API_BASE}/auth/google/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ idToken }),
@@ -264,7 +263,7 @@ export const jwtAdapter: AuthProviderInterface & {
     if (!token) return null;
 
     try {
-      const res = await fetch(`${API_BASE}/users/me`, {
+      const res = await fetch(`${API_BASE}/auth/me`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) return null;

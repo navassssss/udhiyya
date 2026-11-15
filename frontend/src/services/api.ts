@@ -38,7 +38,7 @@ import type {
   ReportKind,
 } from "../types/api";
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:3000";
+import { API_BASE } from "./api-base";
 
 // Platform API (SA02-SA04)
 export const platformApi = {

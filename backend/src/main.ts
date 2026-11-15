@@ -98,23 +98,6 @@ export async function configureFastifyApp(
     crossOriginEmbedderPolicy: false,
   });
 
-  if (appCfg.apiPrefix) {
-    const fastifyInstance = app.getHttpAdapter().getInstance();
-    fastifyInstance.addHook('onRequest', (req: any, _reply: any, done: () => void) => {
-      const rawUrl: string = req.raw?.url || req.url || '';
-      if (
-        !rawUrl.startsWith(`/${appCfg.apiPrefix}`) &&
-        !rawUrl.startsWith('/docs') &&
-        !rawUrl.startsWith('/health')
-      ) {
-        const rewritten = `/${appCfg.apiPrefix}${rawUrl}`;
-        if (req.raw) req.raw.url = rewritten;
-        req.url = rewritten;
-      }
-      done();
-    });
-  }
-
   return appCfg;
 }
 
