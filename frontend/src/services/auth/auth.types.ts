@@ -24,6 +24,9 @@ export interface NestJsUser {
     name: string;
   };
   activeOrganizationId?: string;
+  activeOrganisationId?: string | null;
+  organisation?: { id: string } | null;
+  organisations?: Array<{ id: string }>;
 }
 
 export interface NestJsJwtSession {
