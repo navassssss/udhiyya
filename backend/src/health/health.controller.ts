@@ -11,6 +11,19 @@ export class HealthController {
 
   @Public()
   @SkipThrottle()
+  @Get('live')
+  @ApiOperation({ summary: 'Check that the HTTP process is responsive' })
+  @ApiResponse({ status: 200, description: 'HTTP process is responsive' })
+  live() {
+    return {
+      status: 'ok',
+      uptimeSeconds: Math.floor(process.uptime()),
+      timestamp: new Date().toISOString(),
+    };
+  }
+
+  @Public()
+  @SkipThrottle()
   @Get()
   @ApiOperation({ summary: 'Check application and PostgreSQL database health' })
   @ApiResponse({ status: 200, description: 'Service and database healthy' })

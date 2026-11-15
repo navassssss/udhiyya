@@ -42,16 +42,19 @@ function splitCsv(raw: string | undefined): string[] {
 export const appConfig = registerAs('app', (): AppConfig => {
   const nodeEnv =
     (process.env.NODE_ENV as AppConfig['nodeEnv']) ?? 'development';
+  const authMode = process.env.AUTH_MODE?.trim().toLowerCase();
   return {
     nodeEnv,
     port: Number(process.env.PORT ?? 3000),
     appName: process.env.APP_NAME ?? 'AuthPlatform',
     appUrl: process.env.APP_URL ?? 'http://localhost:3000',
     frontendUrl: process.env.FRONTEND_URL ?? 'http://localhost:3001',
-    apiPrefix: (
-      process.env.API_PREFIX ||
-      (process.env.AUTH_MODE === 'brocoders' ? 'api/v1' : '')
-    ).replace(/^\/+|\/+$/g, ''),
+    // QurbaniOS' Brocoders contract is permanently versioned at /api/v1.
+    // Do not allow a missing or stale hosting variable to silently unversion it.
+    apiPrefix:
+      authMode === 'brocoders'
+        ? 'api/v1'
+        : (process.env.API_PREFIX ?? '').replace(/^\/+|\/+$/g, ''),
     trustProxy: process.env.TRUST_PROXY === 'true',
     allowedOrigins: splitCsv(process.env.ALLOWED_ORIGINS),
     allowedOAuthRedirectUrls: splitCsv(process.env.ALLOWED_OAUTH_REDIRECT_URLS),
