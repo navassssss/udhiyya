@@ -17,11 +17,28 @@ import { btn } from "@/components/app/Btn";
 import { Status } from "@/components/app/WorkflowUI";
 import { countdownValues } from "@/lib/programme";
 import { sample, money } from "@/lib/workflow";
-import { useDemo } from "@/components/app/DemoStore";
+import { publicAdapter } from "@/services/public.adapter";
+import { communicationsAdapter } from "@/services/backend.adapter";
+import type { PublicProgramme } from "@/types/api";
+
+const DEFAULT_ORG_ID = import.meta.env.VITE_DEFAULT_ORG_ID || "e775b56d-38e8-42ee-9a24-9b0e51582ca5";
 
 export function LandingPage() {
   const [intro, setIntro] = useState(false);
-  const { records, programmeStatus } = useDemo();
+  const [programme, setProgramme] = useState<PublicProgramme | null>(null);
+  const [announcements, setAnnouncements] = useState<any[]>([]);
+
+  useEffect(() => {
+    publicAdapter.getPublicProgramme(DEFAULT_ORG_ID, 2027)
+      .then(setProgramme)
+      .catch(() => undefined);
+
+    communicationsAdapter.publicAnnouncements(DEFAULT_ORG_ID, 2027)
+      .then((res: any) => {
+        if (res?.items) setAnnouncements(res.items);
+      })
+      .catch(() => undefined);
+  }, []);
 
   useEffect(() => {
     try {
@@ -60,11 +77,11 @@ export function LandingPage() {
           <div className="mx-auto max-w-7xl px-5 pb-10 pt-12 text-center sm:px-6 sm:pb-16 sm:pt-20 lg:pt-24">
             <div className="inline-flex max-w-full items-center gap-2 rounded-lg border border-ink bg-card px-3 py-2 text-xs font-medium shadow-pop animate-rise">
               <Moon className="size-3.5 shrink-0 text-cobalt" />
-              <span>{programmeStatus}</span>
+              <span>{programme?.status === "published" ? "Programme published" : programme?.status ? `Programme ${programme.status}` : "Planning active"}</span>
             </div>
             <p className="mt-6 flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
               <MapPin className="size-3.5 shrink-0" />
-              {sample.locality} · Aḍḥiyah 2027
+              Calicut Central · Aḍḥiyah 2027
             </p>
             <h1 className="mx-auto mt-6 max-w-5xl font-display text-5xl font-extrabold leading-[1.05] sm:text-6xl lg:text-8xl animate-rise">
               QurbaniOS<span className="text-cobalt">.</span>
@@ -104,16 +121,12 @@ export function LandingPage() {
               </div>
               <div className="grid grid-cols-2 divide-x divide-y divide-border sm:grid-cols-4">
                 {[
-                  { value: records.participants.length, label: "Participants", icon: Users },
-                  { value: records.households.length, label: "Households", icon: Heart },
-                  { value: records.volunteers.length, label: "Volunteers", icon: HandHeart },
+                  { value: programme?.title ? "2027" : "1448", label: "Programme Year", icon: Users },
+                  { value: "Calicut Central", label: "Mahallu Locality", icon: Heart },
+                  { value: "Halal Verified", label: "Operations", icon: HandHeart },
                   {
-                    value: money(
-                      records.payments
-                        .filter((p) => p.status === "Verified")
-                        .reduce((n, p) => n + Number(p.amount), 0),
-                    ),
-                    label: "Verified contributions",
+                    value: programme?.price?.amountMinor ? `₹${(programme.price.amountMinor / 100).toLocaleString("en-IN")}` : "₹2,500",
+                    label: "Share Contribution",
                     icon: ShieldCheck,
                   },
                 ].map((m) => (
@@ -135,19 +148,19 @@ export function LandingPage() {
           <div className="mx-auto grid max-w-7xl grid-cols-2 gap-x-6 gap-y-8 px-5 py-10 lg:grid-cols-4">
             <div>
               <p className="mb-2 text-xs text-muted-foreground">Registration</p>
-              <Status>{programmeStatus}</Status>
+              <Status>{programme?.status === "published" ? "Open" : "Planning"}</Status>
             </div>
             <div className="md:border-l md:border-border md:pl-6">
               <p className="text-xs text-muted-foreground">Closes</p>
               <p className="mt-2 flex items-center gap-2 font-semibold">
                 <CalendarDays className="size-4 text-cobalt" />
-                {sample.deadline}
+                {programme?.registrationClosesAt ? new Date(programme.registrationClosesAt).toLocaleDateString("en-IN", { month: "short", day: "numeric", year: "numeric" }) : "01 Jun 2027"}
               </p>
             </div>
             <div className="md:border-l md:border-border md:pl-6">
               <p className="text-xs text-muted-foreground">Per share</p>
               <p className="mt-1.5 text-xl font-bold">
-                {money(sample.price)}
+                {programme?.price?.amountMinor ? `₹${(programme.price.amountMinor / 100).toLocaleString("en-IN")}` : "₹2,500"}
               </p>
             </div>
             <div className="md:border-l md:border-border md:pl-6">
@@ -218,16 +231,15 @@ export function LandingPage() {
               </Link>
             </div>
             <div className="mt-10 grid gap-6 md:grid-cols-3">
-              {records.announcements
-                .filter((a) => a.status === "Published" && a.audience === "All users")
-                .slice(0, 3)
-                .map((a) => (
+              {announcements.length > 0 ? (
+                announcements.slice(0, 3).map((a: any) => (
                   <article key={a.id} className="rounded-lg border border-border bg-card p-6 lift">
                     <div className="flex items-center justify-between">
                       <Megaphone className="size-4 text-cobalt" />
-                      <p className="text-[10px] text-muted-foreground">{a.date}</p>
+                      <p className="text-[10px] text-muted-foreground">{a.publishedAt ? new Date(a.publishedAt).toLocaleDateString() : "Latest"}</p>
                     </div>
                     <h3 className="mt-5 text-lg font-semibold">{a.title}</h3>
+                    <p className="mt-2 text-xs text-muted-foreground line-clamp-2">{a.body}</p>
                     <Link
                       to="/announcements"
                       className="mt-5 flex items-center gap-2 text-xs text-cobalt"
@@ -236,7 +248,13 @@ export function LandingPage() {
                       <ArrowRight className="size-3" />
                     </Link>
                   </article>
-                ))}
+                ))
+              ) : (
+                <div className="col-span-full rounded-lg border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
+                  <Megaphone className="mx-auto mb-2 size-6 text-muted-foreground/60" />
+                  Official committee notices and programme schedules will appear here once published.
+                </div>
+              )}
             </div>
           </div>
         </section>

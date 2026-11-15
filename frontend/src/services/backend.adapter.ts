@@ -56,11 +56,11 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
 // -----------------------------------------------------------------------------
 export const platformAdapter = {
   async listOrganisations() {
-    try {
-      return await request<any[]>("/platform/organisations");
-    } catch {
-      return null;
-    }
+    return await request<any[]>("/platform/organisations");
+  },
+
+  async getOrganisation(id: string) {
+    return await request<any>(`/platform/organisations/${id}`);
   },
 
   async createOrganisation(data: any) {
@@ -70,10 +70,27 @@ export const platformAdapter = {
     });
   },
 
+  async updateOrganisation(id: string, data: any) {
+    return await request<any>(`/platform/organisations/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    });
+  },
+
   async inviteAdmin(orgId: string, data: { email: string; name?: string }) {
     return await request<any>(`/platform/organisations/${orgId}/invitations`, {
       method: "POST",
       body: JSON.stringify(data),
+    });
+  },
+
+  async listInvitations(orgId: string) {
+    return await request<any[]>(`/platform/organisations/${orgId}/invitations`);
+  },
+
+  async revokeInvitation(orgId: string, invitationId: string) {
+    return await request<any>(`/platform/organisations/${orgId}/invitations/${invitationId}/revoke`, {
+      method: "POST",
     });
   },
 };
@@ -563,6 +580,16 @@ export const communicationsAdapter = {
         method: "POST",
       },
     );
+  },
+
+  async publicAnnouncements(orgId: string, year: number) {
+    try {
+      const res = await fetch(`${API_BASE}/public/organisations/${orgId}/programmes/${year}/announcements`);
+      if (!res.ok) return { items: [] };
+      return await res.json();
+    } catch {
+      return { items: [] };
+    }
   },
 };
 

@@ -1,10 +1,7 @@
-import { Link, useNavigate } from "@tanstack/react-router";
+import { useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import {
   ArrowRight,
-  ShieldCheck,
-  Users,
-  UserRound,
   KeyRound,
   Mail,
   UserPlus,
@@ -12,41 +9,21 @@ import {
 } from "lucide-react";
 import { AuthShell, Field } from "@/components/app/AuthShell";
 import { Button } from "@/components/app/Btn";
-import { useParticipant } from "@/components/app/ParticipantSession";
-import { useDemo } from "@/components/app/DemoStore";
 import { useAuth, type UserRole } from "@/services/auth";
 import { GoogleSignIn } from "@/services/auth/GoogleSignIn";
-import { demoAccounts } from "@/lib/workflow";
 import { toast } from "sonner";
 
 type AuthMode = "signin" | "signup" | "forgot";
 
 export function LoginPage() {
   const [mode, setMode] = useState<AuthMode>("signin");
-  const [role, setRole] = useState("Participant");
-  const [selectedVolunteer, setSelectedVolunteer] = useState("Yusuf Ahmed");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
-  const { enter } = useParticipant();
-  const { login } = useDemo();
-  const { signIn, signUp, resetPassword, switchMockRole, isConfigured } = useAuth();
+  const { signIn, signUp, resetPassword, activeProvider } = useAuth();
   const nav = useNavigate();
-
-  const handleRoleSelect = (rName: string) => {
-    setRole(rName);
-    if (rName === "Super Admin") {
-      setEmail("admin@platform.qurbanios.internal");
-    } else if (rName === "Committee") {
-      setEmail("office@example.test");
-    } else if (rName === "Volunteer") {
-      setEmail("volunteer@example.test");
-    } else {
-      setEmail("participant@example.test");
-    }
-  };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -68,19 +45,9 @@ export function LoginPage() {
 
       // 2. Sign up flow
       if (mode === "signup") {
-        const targetRole: UserRole =
-          role === "Super Admin"
-            ? "super_admin"
-            : role === "Committee"
-              ? "committee_admin"
-              : role === "Volunteer"
-                ? "volunteer"
-                : "participant";
-
         const { error, user } = await signUp(email, password, {
           name: fullName || email.split("@")[0],
-          role: targetRole,
-          org_id: targetRole === "super_admin" ? undefined : "org_demo",
+          role: "participant",
         });
 
         setSubmitting(false);
@@ -90,57 +57,31 @@ export function LoginPage() {
         }
 
         toast.success(
-          user && !user.confirmed_at
-            ? "Account created! Please check your email to confirm registration."
-            : "Account registered and logged in!",
+          user && !(user as any).confirmed_at && !(user as any).emailVerifiedAt
+            ? "Account created! You can now sign in."
+            : "Account registered and ready!",
         );
 
-        // Direct to portal
-        redirectForRole(targetRole);
+        setMode("signin");
         return;
       }
 
-      // 3. Sign in flow (live Supabase or demo)
+      // 3. Sign in flow (live NestJS JWT or Supabase)
       const { error, profile } = await signIn(email, password);
       setSubmitting(false);
 
       if (error) {
-        toast.error(error.message || "Invalid credentials");
+        toast.error(error.message || "Invalid email or password");
         return;
       }
 
       const activeRole = profile?.role || "participant";
       toast.success(`Welcome back, ${profile?.name || activeRole}!`);
 
-      // Also sync DemoStore for seamless backward-compatibility
-      syncDemoState(role, email);
-
       redirectForRole(activeRole);
     } catch (err: any) {
       setSubmitting(false);
       toast.error(err.message || "An unexpected authentication error occurred");
-    }
-  };
-
-  const syncDemoState = (roleName: string, userEmail: string) => {
-    if (roleName === "Participant") {
-      enter({
-        name: "Mohammed Ashraf",
-        email: userEmail || "participant@example.test",
-        activity: "Cattle share",
-        household: "QBH-00125",
-        shares: 1,
-        reference: "QOS-2027-001",
-        status: "Pending review",
-      });
-      switchMockRole("participant");
-    } else {
-      const a = demoAccounts.find(
-        (acc) => acc.role === roleName && (roleName !== "Volunteer" || acc.name === selectedVolunteer),
-      );
-      if (a) {
-        login(a);
-      }
     }
   };
 
@@ -169,7 +110,7 @@ export function LoginPage() {
         mode === "signin"
           ? "Welcome back to your community programme."
           : mode === "signup"
-            ? "Register a new participant or volunteer account."
+            ? "Register a new participant account."
             : "Reset your QurbaniOS account password."
       }
     >
@@ -213,33 +154,6 @@ export function LoginPage() {
         </button>
       </div>
 
-      {/* Quick Role Selection Buttons */}
-      {mode !== "forgot" && (
-        <div className="mb-6">
-          <p className="mb-2 text-[11px] font-medium text-muted-foreground">Select role target / demo account:</p>
-          <div className="grid grid-cols-2 gap-2">
-            {[
-              { name: "Participant", icon: UserRound },
-              { name: "Committee", icon: ShieldCheck },
-              { name: "Volunteer", icon: Users },
-              { name: "Super Admin", icon: ShieldCheck },
-            ].map((r) => (
-              <Button
-                key={r.name}
-                type="button"
-                variant={role === r.name ? "ink" : "outline"}
-                size="sm"
-                className=""
-                onClick={() => handleRoleSelect(r.name)}
-              >
-                <r.icon className="size-4" />
-                {r.name}
-              </Button>
-            ))}
-          </div>
-        </div>
-      )}
-
       {/* Authentication Form */}
       <form className="space-y-4" onSubmit={handleSubmit}>
         {mode === "signup" && (
@@ -251,25 +165,6 @@ export function LoginPage() {
             placeholder="e.g. Yusuf Ahmed"
             required
           />
-        )}
-
-        {role === "Volunteer" && mode === "signin" && (
-          <label className="block text-sm font-medium">
-            Assigned volunteer profile
-            <select
-              value={selectedVolunteer}
-              onChange={(e) => setSelectedVolunteer(e.target.value)}
-              className="mt-2 h-11 w-full rounded-lg border border-border bg-card px-3 text-sm"
-            >
-              {demoAccounts
-                .filter((a) => a.role === "Volunteer")
-                .map((a) => (
-                  <option key={a.name} value={a.name}>
-                    {a.name} · {a.department}
-                  </option>
-                ))}
-            </select>
-          </label>
         )}
 
         <Field
@@ -289,7 +184,7 @@ export function LoginPage() {
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            placeholder={isConfigured ? "Enter your password" : "Enter password (or sample value)"}
+            placeholder="Enter your password"
             required
           />
         )}
@@ -299,7 +194,7 @@ export function LoginPage() {
             "Authenticating…"
           ) : mode === "signin" ? (
             <>
-              Open {role.toLowerCase()} portal
+              Sign in to portal
               <ArrowRight className="size-4" />
             </>
           ) : mode === "signup" ? (
@@ -352,7 +247,7 @@ export function LoginPage() {
             </button>
           )}
           <span className="text-muted-foreground text-[11px]">
-            {isConfigured ? "Supabase Auth active" : "Demo Simulation mode"}
+            {activeProvider === "nestjs" ? "NestJS JWT Active" : "Supabase Auth Active"}
           </span>
         </div>
       </form>

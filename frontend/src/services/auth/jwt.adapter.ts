@@ -13,22 +13,24 @@ let currentSession: NestJsJwtSession | null = null;
 let refreshPromise: Promise<string | null> | null = null;
 
 function mapNestJsRole(user: any): UserRole {
-  const roleName = user?.role?.slug || user?.role?.name || "";
+  const roles: string[] = Array.isArray(user?.roles)
+    ? user.roles
+    : [user?.role?.slug || user?.role?.name || ""];
   const email = user?.email || "";
 
-  if (roleName === "super_admin" || email.includes("super") || email.includes("platform")) {
+  if (roles.includes("super_admin") || email.includes("super") || email.includes("platform")) {
     return "super_admin";
   }
   if (
-    roleName === "org_admin" ||
-    roleName === "org_owner" ||
-    roleName === "committee_admin" ||
-    email.includes("office") ||
+    roles.includes("org_admin") ||
+    roles.includes("org_owner") ||
+    roles.includes("committee_admin") ||
+    roles.includes("admin") ||
     email.includes("committee")
   ) {
     return "committee_admin";
   }
-  if (roleName === "volunteer" || email.includes("volunteer")) {
+  if (roles.includes("org_member") || roles.includes("volunteer") || email.includes("volunteer")) {
     return "volunteer";
   }
   return "participant";
@@ -40,7 +42,7 @@ function userToProfile(user: any): AuthUserProfile {
     id: user.id || "usr_jwt",
     email: user.email || "",
     role,
-    orgId: user.activeOrganizationId || (role !== "super_admin" ? "org_demo" : undefined),
+    orgId: user.activeOrganizationId || (role !== "super_admin" ? "e775b56d-38e8-42ee-9a24-9b0e51582ca5" : undefined),
     name:
       user.name ||
       [user.firstName, user.lastName].filter(Boolean).join(" ") ||
@@ -95,42 +97,35 @@ export const jwtAdapter: AuthProviderInterface & {
         throw new Error(err.message || "Failed to sign in");
       }
 
-      const data: NestJsJwtSession = await res.json();
-      currentSession = data;
-      sessionStorage.setItem("qurbani_jwt_session", JSON.stringify(data));
+      const data: any = await res.json();
+      const token = data.accessToken || data.token;
+      const sessionData: NestJsJwtSession = {
+        token,
+        refreshToken: data.refreshToken || "",
+        tokenExpires: Date.now() + 3600 * 1000,
+        user: data.user,
+      };
+      currentSession = sessionData;
+      sessionStorage.setItem("qurbani_jwt_session", JSON.stringify(sessionData));
       const profile = userToProfile(data.user);
+      sessionStorage.setItem("qurbani_auth_profile", JSON.stringify(profile));
       return { error: null, profile };
     } catch (err: any) {
-      // Mock fallback if local NestJS backend auth controller is offline
-      const mockRole = mapNestJsRole({ email });
-      const mockSession: NestJsJwtSession = {
-        token: `mock-jwt-token-${mockRole}`,
-        refreshToken: `mock-refresh-${mockRole}`,
-        tokenExpires: Date.now() + 1000 * 60 * 60, // 1 hour
-        user: {
-          id: `usr_${Math.random().toString(36).substring(7)}`,
-          email,
-          name: email.split("@")[0],
-          role: { id: 2, name: mockRole, slug: mockRole },
-          activeOrganizationId: mockRole !== "super_admin" ? "org_demo" : undefined,
-        },
-      };
-      currentSession = mockSession;
-      sessionStorage.setItem("qurbani_jwt_session", JSON.stringify(mockSession));
-      return { error: null, profile: userToProfile(mockSession.user) };
+      return { error: err };
     }
   },
 
   async signUp(payload: RegisterPayload) {
     try {
+      const name = [payload.firstName, payload.lastName].filter(Boolean).join(" ") || payload.email.split("@")[0];
       const res = await fetch(`${API_BASE}/auth/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          name,
           email: payload.email,
           password: payload.password,
-          firstName: payload.firstName,
-          lastName: payload.lastName,
+          confirmPassword: payload.password,
         }),
       });
 
@@ -139,9 +134,10 @@ export const jwtAdapter: AuthProviderInterface & {
         throw new Error(err.message || "Registration failed");
       }
 
-      return { error: null, user: { email: payload.email } };
+      const data = await res.json().catch(() => ({ user: { email: payload.email, name } }));
+      return { error: null, user: data.user };
     } catch (err: any) {
-      return { error: null, user: { email: payload.email } };
+      return { error: err, user: null };
     }
   },
 

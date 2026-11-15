@@ -40,30 +40,15 @@ import type {
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:3000";
 
-// Platform API
+// Platform API (SA02-SA04)
 export const platformApi = {
-  listOrganisations: async () => {
-    const live = await platformAdapter.listOrganisations();
-    return live || mockClient.listOrganisations();
-  },
-  getOrganisation: mockClient.getOrganisation,
-  createOrganisation: async (data: any) => {
-    try {
-      return await platformAdapter.createOrganisation(data);
-    } catch {
-      return mockClient.createOrganisation(data);
-    }
-  },
-  updateOrganisation: mockClient.updateOrganisation,
-  listInvitations: mockClient.listInvitations,
-  createInvitation: async (orgId: string, data: any) => {
-    try {
-      return await platformAdapter.inviteAdmin(orgId, data);
-    } catch {
-      return mockClient.createInvitation(orgId, data);
-    }
-  },
-  revokeInvitation: mockClient.revokeInvitation,
+  listOrganisations: platformAdapter.listOrganisations,
+  getOrganisation: platformAdapter.getOrganisation,
+  createOrganisation: platformAdapter.createOrganisation,
+  updateOrganisation: platformAdapter.updateOrganisation,
+  listInvitations: platformAdapter.listInvitations,
+  createInvitation: platformAdapter.inviteAdmin,
+  revokeInvitation: platformAdapter.revokeInvitation,
   getFeatures: mockClient.getOrgFeatures,
   updateFeatures: mockClient.updateOrgFeatures,
 };

@@ -26,7 +26,12 @@ export function ProtectedRoute({ allowedRoles, children }: ProtectedRouteProps) 
     );
   }
 
-  // Active role resolved from Supabase profile or DemoStore account
+  // If no session and not in mock mode, redirect to login
+  if (!profile && !isMockMode) {
+    return <Navigate to="/login" replace />;
+  }
+
+  // Active role resolved from authenticated profile, or DemoStore account when explicitly in mock mode
   const activeRole: UserRole =
     profile?.role ||
     (account?.role === "Super Admin"
@@ -36,11 +41,6 @@ export function ProtectedRoute({ allowedRoles, children }: ProtectedRouteProps) 
         : account?.role === "Volunteer"
           ? "volunteer"
           : "participant");
-
-  // If no session and not in mock mode, redirect to login
-  if (!profile && !account && !isMockMode) {
-    return <Navigate to="/login" replace />;
-  }
 
   // Check if role is allowed
   if (allowedRoles && allowedRoles.length > 0 && !allowedRoles.includes(activeRole)) {

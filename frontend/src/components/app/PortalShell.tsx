@@ -140,7 +140,9 @@ export function PortalShell({
           ? "Volunteer"
           : "Participant";
 
-  // Check role match from either Supabase profile or DemoStore account
+  const isMockMode = import.meta.env.VITE_USE_MOCK_API === "true";
+
+  // Check role match from authenticated profile or DemoStore account in mock mode
   const activeRole =
     profile?.role === "super_admin"
       ? "Super Admin"
@@ -150,7 +152,7 @@ export function PortalShell({
           ? "Volunteer"
           : profile?.role === "participant"
             ? "Participant"
-            : account?.role;
+            : (isMockMode ? account?.role : undefined);
 
   if (!ready)
     return (
@@ -159,8 +161,13 @@ export function PortalShell({
       </div>
     );
 
-  if (activeRole !== expected && (!account || account.role !== expected))
+  if (!profile && !isMockMode) {
     return <Navigate to="/login" replace />;
+  }
+
+  if (activeRole !== expected) {
+    return <Navigate to="/login" replace />;
+  }
 
   const displayName = profile?.name || account?.name || "User";
   const displayEmail = profile?.email || account?.department || expected;
