@@ -8,16 +8,16 @@ services:
     autoDeployTrigger: off
     buildCommand: npm ci --include=dev && npm run build
     startCommand: npm run start:prod:migrate
-    healthCheckPath: /health
+    healthCheckPath: /api/v1/health
     envVars:
       - key: NODE_VERSION
         value: "24"
       - key: NODE_ENV
         value: production
       - key: AUTH_MODE
-        value: supabase
+        value: brocoders
       - key: API_PREFIX
-        value: ""
+        value: "api/v1"
       - key: TRUST_PROXY
         value: "true"
       - key: DATABASE_SSL

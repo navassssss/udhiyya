@@ -442,6 +442,15 @@ export class RegistrationService {
         },
         include: registrationInclude,
       });
+      if (status === 'approved') {
+        await tx.receipt.create({
+          data: {
+            programmeId: scope.programmeId,
+            registrationId: id,
+            kind: 'registration',
+          },
+        });
+      }
       await this.audit(
         tx,
         scope,

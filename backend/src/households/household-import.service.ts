@@ -138,6 +138,7 @@ export class HouseholdImportService {
 
     const rows: CreateHouseholdDto[] = [];
     const errors: RowError[] = [];
+    const seen = new Set<string>();
     for (const [index, record] of data.entries()) {
       const row = index + 2;
       if (record.length > fields.length) {
@@ -155,6 +156,21 @@ export class HouseholdImportService {
           phone: values.phone || undefined,
         },
       });
+      const key = JSON.stringify([
+        household.name.toLowerCase(),
+        household.address.toLowerCase(),
+        household.contact.email?.toLowerCase(),
+        household.contact.phone,
+      ]);
+      if (seen.has(key)) {
+        errors.push({
+          row,
+          field: 'row',
+          message: 'Duplicate household in this file',
+        });
+        continue;
+      }
+      seen.add(key);
       const validation = validateSync(household);
       errors.push(...flatten(validation, row));
       rows.push(household);

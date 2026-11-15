@@ -6,7 +6,7 @@ This proposal covers the M2 journeys in [Features_workflow.md](Features_workflow
 
 ## Conventions
 
-Use JSON over HTTPS. Paths below are relative to the configured API base, including any prefix. Protected calls send a Supabase access token as `Authorization: Bearer <token>`, following the [starter frontend contract](../../docs/frontend-auth.md). Signup, confirmation, login and recovery follow that contract. Protected workspace calls verify the caller's current role, membership and organisation status.
+Use JSON over HTTPS. Paths below are relative to the configured API base, including any prefix. In QurbaniOS JWT mode the API base ends in `/api/v1`. Protected calls send the Nest-issued access token as `Authorization: Bearer <token>`. Email signup, email confirmation, password recovery, Google popup sign-in, refresh and logout follow the [frontend auth contract](../backend/FRONTEND-AUTH.md). Protected workspace calls verify the caller's current role, membership and organisation status.
 
 ## Screen and endpoint map
 
@@ -14,7 +14,7 @@ All route names and new payloads are proposed. IDs are opaque strings. Mutation 
 
 | Screen | Method and path | Access and payload | Success |
 |---|---|---|---|
-| PUB09 and signed-in shell | GET /users/me | Signed-in user. Reuse the starter profile shape. | 200 profile |
+| PUB09 and signed-in shell | GET /auth/me | Nest-issued bearer access token. | 200 profile with global roles and organisation memberships |
 | SA02–SA03 | GET /platform/organisations | Super Admin. Optional `search`, `cursor`, `limit`. | 200 `{ items, nextCursor }`, with null cursor at the end |
 | SA02–SA03 | POST /platform/organisations | Super Admin. `{ name, locality, contact }`. | 201 organisation in `onboarding` |
 | SA03 | GET /platform/organisations/:orgId | Super Admin. | 200 organisation |
@@ -30,7 +30,7 @@ All route names and new payloads are proposed. IDs are opaque strings. Mutation 
 | ADM02 | POST /organisations/:orgId/programmes/:programmeId/publish | Same. Validated programme with required public information. | 200 programme in `published` |
 | PUB02–PUB04, PUB08 | GET /public/organisations/:orgId/programmes/:year | Anonymous. Organisation active and programme published. | 200 public programme projection |
 
-PUB01 is a frontend loading state. PUB05 announcements, PUB06 approved aggregates, and PUB07 distribution depend on later work. SA01 dashboard metrics and SA05–SA08 require the scope review tracked in M2.
+PUB01 is a frontend loading state. Public announcements, aggregate overview and distribution follow the routes below. SA06 and SA07 still have scope TBD.
 
 ## Payload examples
 
@@ -60,7 +60,7 @@ Draft fields other than year and title may be null. Year and organisation identi
 
 ### Programme implementation notes
 
-The six programme routes in the table are implemented for local verification. The platform organisation directory, lifecycle, invitations, and committee workspace discovery are also implemented for local verification. The programme API trims title whitespace and requires a non-blank title of at most 200 characters. It accepts years 1900–9999 and limits description and guidelines to 10,000 characters each. Public contact uses the email object shown in the example. Date inputs require a timezone offset or UTC designator. Registration limits and amounts must fit a signed 32-bit integer. Programme pagination defaults to 25 and caps at 100. Publishing an already published programme returns its current representation. Updates to a published programme must preserve its required public fields.
+The six programme routes in the table are implemented for local verification. The platform organisation directory, lifecycle, invitations, and committee workspace discovery are also implemented for local verification. The programme API trims title whitespace and requires a non-blank title of at most 200 characters. It accepts years 1900–9999 and limits description and guidelines to 10,000 characters each. Public contact uses the email object shown in the example. Date inputs require a timezone offset or UTC designator. Registration limits and amounts must fit a signed 32-bit integer. Programme pagination defaults to 25 and caps at 100. Publishing an already published programme returns its current representation. Updates to a published programme must preserve its required public fields. `faqs` optionally accepts up to 25 `{ question, answer }` entries and is returned in programme detail and the public projection.
 
 ### Onboarding implementation notes
 
@@ -77,7 +77,7 @@ Invitation creation requires a non-blank recipient name of at most 200 character
 | HTTP | Client handling |
 |---|---|
 | 400 | Show validation details. Starter `message` can be a string or array. |
-| 401 | Follow the starter's refresh and login flow. |
+| 401 | Rotate the Nest refresh token and return to sign-in if refresh fails. |
 | 403 | Show access denied, verified-email required, or workspace unavailable according to the returned code when defined. |
 | 404 | Show unavailable for missing, unpublished public, or out-of-tenant programme resources. |
 | 409 | Show duplicate year, invalid transition, or unavailable invitation. Refresh current state before retrying. |
@@ -95,7 +95,7 @@ All routes below are proposed. Prefix relative paths with the base in the first 
 |---|---|---|
 | SA01 | GET /platform/dashboard | Super Admin. Organisation counts by status, committee admin count and recent platform events. |
 | SA04 | POST /platform/organisations/:orgId/invitations/:id/revoke | Super Admin. Revokes a pending invitation and returns its updated state. |
-| SA05 | GET/PATCH /platform/organisations/:orgId/features | Super Admin. GET and PATCH return `{ enabledFeatures: string[] }`. PATCH sends the full set of agreed feature keys. |
+| SA05 | GET/PATCH /platform/organisations/:orgId/features | Super Admin. GET and PATCH return `{ enabledFeatures: string[] }`. PATCH sends the full set of feature keys from EF-01 through EF-05. Deployed modules also require their server flag to be enabled. |
 | SA08 | GET /platform/audit-events | Super Admin. Filter by `organisationId` and `action`. Rows include actor ID, action, resource ID and timestamp. |
 | PUB05 | U GET /announcements | Published announcements with title, body and publication time. |
 | PUB06 | U GET /overview | Approved aggregates with as-of time. Proposed fields are animal count and programme progress, with optional published financial totals. |
@@ -120,7 +120,7 @@ SA06 platform settings and SA07 support requests have scope TBD. SA05 paid plans
 | PAR01, PAR04, PAR07–08 | P GET /me/participation | Applicant. `{ registration, assignment, operations, distribution }`. Unassigned sections are null. Return own group/animal/share and published progress and collection details. |
 | PAR03, ADM02 | P GET /me/participation-options, GET/PUT /participation-options | Applicant read returns available choices. Committee GET/PUT manages `{ items: [{ id?, name, price, maxShares }] }`. Existing registrations retain their fee and option snapshot. |
 
-The committee household directory and multipart import are implemented for local verification. Household names and addresses are non-blank and limited to 200 and 1,000 characters respectively. Contact is an object with optional email and phone fields. A PATCH that supplies contact replaces that object. Directory search matches name or address. Import uses a single part named `file`, up to 2 MiB and 1,000 data rows. Use `name,address,email,phone` headers, with name and address required. For XLSX, use the first worksheet and keep phone values as text to retain leading zeros. A file with invalid rows returns HTTP 200 with `importedCount: 0` and row errors. Invalid file structure returns 400, and limits return 413. A successful batch creates new records, so confirm the result before retrying an upload.
+The committee household directory and multipart import are implemented for local verification. Household names and addresses are non-blank and limited to 200 and 1,000 characters respectively. Contact is an object with optional email and phone fields. A PATCH that supplies contact replaces that object. Directory search matches name or address. Import uses a single part named `file`, up to 2 MiB and 1,000 data rows. Use `name,address,email,phone` headers, with name and address required. For XLSX, use the first worksheet and keep phone values as text to retain leading zeros. A file with invalid or duplicate rows returns HTTP 200 with `importedCount: 0` and row errors. Invalid file structure returns 400, and limits return 413. A successful batch creates new records, so confirm the result before retrying an upload.
 
 Registration and committee review are implemented for local verification. Signed-in applicants can submit personal household details without committee membership. Those details are separate from the committee directory. Registration requires an active published programme, an open window, saved household details and an active option in the programme. The opening time is inclusive and closing time is exclusive. Submitted and approved registrations consume capacity. Duplicate applications or exhausted capacity return 409. Each submission snapshots the household, option name and unit price and returns `fee` using the shared money representation.
 

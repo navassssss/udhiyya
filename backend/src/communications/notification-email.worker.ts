@@ -1,3 +1,4 @@
+import { notificationAudience } from './notification-audience.js';
 import { randomUUID } from 'node:crypto';
 import {
   Inject,
@@ -51,7 +52,6 @@ export class NotificationEmailWorker implements OnModuleInit, OnModuleDestroy {
       orderBy: { readyAt: 'asc' },
       take: 10,
       include: {
-        user: { select: { email: true, status: true, emailVerifiedAt: true } },
         dispatch: {
           include: {
             programme: {
@@ -82,11 +82,20 @@ export class NotificationEmailWorker implements OnModuleInit, OnModuleDestroy {
       if (!claimed.count) continue;
 
       const where = { id: job.id, state: 'sending' as const, claim };
-      if (
-        job.dispatch.programme.organization.status !== 'ACTIVE' ||
-        job.user.status !== 'ACTIVE' ||
-        !job.user.emailVerifiedAt
-      ) {
+      const recipient =
+        job.dispatch.programme.organization.status === 'ACTIVE'
+          ? await this.prisma.user.findFirst({
+              where: {
+                id: job.userId,
+                ...notificationAudience(
+                  job.dispatch.programmeId,
+                  job.dispatch.audience,
+                ),
+              },
+              select: { email: true },
+            })
+          : null;
+      if (!recipient) {
         await this.prisma.notificationEmail.updateMany({
           where,
           data: { state: 'skipped', claim: null },
@@ -103,7 +112,7 @@ export class NotificationEmailWorker implements OnModuleInit, OnModuleDestroy {
 
       try {
         await this.mail.dispatch({
-          to: job.user.email,
+          to: recipient.email,
           subject: job.dispatch.title,
           text: job.dispatch.body,
           html: '',

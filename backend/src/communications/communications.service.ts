@@ -1,3 +1,4 @@
+import { notificationAudience } from './notification-audience.js';
 import {
   BadRequestException,
   ConflictException,
@@ -174,25 +175,8 @@ export class CommunicationsService {
     return this.write(async (tx) => {
       await this.registrations.getProgramme(tx, scope, false, true);
       const programmeId = scope.programmeId;
-      const include = (audience: NotificationDto['audience']) =>
-        input.audience === audience || input.audience === 'all';
-      const audience: Prisma.UserWhereInput[] = [];
-      if (include('participants'))
-        audience.push({ registrations: { some: { programmeId } } });
-      if (include('beneficiaries'))
-        audience.push({
-          beneficiaryLinks: { some: { programmeId, eligibility: 'approved' } },
-        });
-      if (include('volunteers'))
-        audience.push({
-          volunteerAssignments: { some: { programmeId, active: true } },
-        });
       const recipients = await tx.user.findMany({
-        where: {
-          status: 'ACTIVE',
-          emailVerifiedAt: { not: null },
-          OR: audience,
-        },
+        where: notificationAudience(programmeId, input.audience),
         select: { id: true },
         take: 10001,
       });

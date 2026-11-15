@@ -1,5 +1,9 @@
 import { Type } from 'class-transformer';
 import {
+  ArrayMaxSize,
+  ArrayUnique,
+  IsArray,
+  IsUUID,
   IsEmail,
   IsIn,
   IsNotEmpty,
@@ -71,4 +75,31 @@ export class InviteCommitteeAdminDto {
   @IsEmail()
   @MaxLength(254)
   email!: string;
+}
+
+export const enhancementIds = [
+  'EF-01',
+  'EF-02',
+  'EF-03',
+  'EF-04',
+  'EF-05',
+] as const;
+
+export class PlatformFeaturesDto {
+  @IsArray()
+  @ArrayMaxSize(5)
+  @ArrayUnique()
+  @IsIn(enhancementIds, { each: true })
+  enabledFeatures!: (typeof enhancementIds)[number][];
+}
+
+export class PlatformAuditQuery extends ProgrammeListQuery {
+  @IsOptional()
+  @IsUUID()
+  organisationId?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  action?: string;
 }

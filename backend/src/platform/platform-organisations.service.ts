@@ -1,3 +1,7 @@
+import type {
+  PlatformAuditQuery,
+  PlatformFeaturesDto,
+} from './platform-organisations.dto.js';
 import { OrganizationsService } from '../organizations/organizations.service.js';
 import type { AuthenticatedUser } from '../common/interfaces/authenticated-user.interface.js';
 import type { ProgrammeListQuery } from '../programmes/programmes.dto.js';
@@ -233,8 +237,127 @@ export class PlatformOrganisationsService {
   }
 
   async revoke(id: string, invitationId: string, actor: AuthenticatedUser) {
-    await this.organizations.revokeInvitation(id, invitationId, actor);
+    await this.organizations.revokeInvitation(id, invitationId, actor, true);
     return { id: invitationId, status: 'revoked' };
+  }
+
+  async features(id: string) {
+    const row = await this.prisma.organization.findUnique({
+      where: { id },
+      select: { enabledFeatures: true },
+    });
+    if (!row) throw new NotFoundException('Organisation not found');
+    return row;
+  }
+
+  async updateFeatures(
+    id: string,
+    actorId: string,
+    input: PlatformFeaturesDto,
+  ) {
+    return this.prisma.$transaction(async (tx) => {
+      const row = await tx.organization.findUnique({
+        where: { id },
+        select: { status: true },
+      });
+      if (!row) throw new NotFoundException('Organisation not found');
+      if (row.status === 'CLOSED')
+        throw new ConflictException('Organisation is closed');
+      const enabledFeatures = input.enabledFeatures.slice().sort();
+      const result = await tx.organization.updateMany({
+        where: { id, status: { not: 'CLOSED' } },
+        data: { enabledFeatures },
+      });
+      if (!result.count)
+        throw new ConflictException(
+          'Organisation was closed. Refresh and retry.',
+        );
+      await this.audit(tx, id, actorId, 'PLATFORM_FEATURES_UPDATED', {
+        enabledFeatures,
+      });
+      return { enabledFeatures };
+    });
+  }
+
+  async dashboard() {
+    const [counts, committeeAdminCount, recentActivity] = await Promise.all([
+      this.prisma.organization.groupBy({
+        by: ['status'],
+        _count: { _all: true },
+      }),
+      this.prisma.user.count({
+        where: {
+          status: 'ACTIVE',
+          organizationMemberships: {
+            some: {
+              status: 'ACTIVE',
+              roles: {
+                some: { role: { scope: 'ORGANIZATION', slug: 'org_admin' } },
+              },
+            },
+          },
+        },
+      }),
+      this.prisma.auditLog.findMany({
+        where: { action: { startsWith: 'PLATFORM_' } },
+        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+        take: 10,
+        select: {
+          id: true,
+          actorId: true,
+          organizationId: true,
+          action: true,
+          targetId: true,
+          createdAt: true,
+        },
+      }),
+    ]);
+    const count = (status: OrganizationStatus) =>
+      counts.find((row) => row.status === status)?._count._all ?? 0;
+    return {
+      totalOrganisations: counts.reduce((sum, row) => sum + row._count._all, 0),
+      organisations: {
+        onboarding: count('ONBOARDING'),
+        active: count('ACTIVE'),
+        suspended: count('SUSPENDED'),
+        closed: count('CLOSED'),
+      },
+      committeeAdminCount,
+      recentActivity: recentActivity.map(({ organizationId, ...event }) => ({
+        ...event,
+        organisationId: organizationId,
+      })),
+    };
+  }
+
+  async auditEvents(query: PlatformAuditQuery) {
+    const rows = await this.prisma.auditLog.findMany({
+      where: {
+        organizationId: query.organisationId,
+        id: query.cursor ? { gt: query.cursor } : undefined,
+        action: { startsWith: 'PLATFORM_', equals: query.action },
+      },
+      orderBy: { id: 'asc' },
+      take: query.limit + 1,
+      select: {
+        id: true,
+        actorId: true,
+        organizationId: true,
+        action: true,
+        targetId: true,
+        createdAt: true,
+      },
+    });
+    const items = rows
+      .slice(0, query.limit)
+      .map(({ organizationId, ...event }) => ({
+        ...event,
+        organisationId: organizationId,
+      }));
+    return {
+      items,
+      nextCursor: rows.length > query.limit ? (items.at(-1)?.id ?? null) : null,
+    };
   }
 
   private async audit(

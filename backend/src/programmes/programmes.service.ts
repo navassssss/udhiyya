@@ -12,6 +12,10 @@ import type {
   UpdateProgrammeDto,
 } from './programmes.dto.js';
 
+type ProgrammeChanges = Omit<Partial<Programme>, 'faqs'> & {
+  faqs?: { question: string; answer: string }[];
+};
+
 function projectPublic(programme: Programme) {
   return {
     year: programme.year,
@@ -19,6 +23,7 @@ function projectPublic(programme: Programme) {
     status: programme.status,
     description: programme.description,
     guidelines: programme.guidelines,
+    faqs: programme.faqs,
     publicContact: programme.publicEmail
       ? { email: programme.publicEmail }
       : null,
@@ -108,8 +113,20 @@ export class ProgrammesService {
     const title = dto.title?.trim();
     if (dto.title !== undefined && !title)
       throw new BadRequestException('Title is required');
+    if (dto.faqs === null)
+      throw new BadRequestException('Use an empty array to clear FAQs');
+    const faqs = dto.faqs?.map((item) => ({
+      question: item.question.trim(),
+      answer: item.answer.trim(),
+    }));
+    if (faqs?.some((item) => !item.question || !item.answer)) {
+      throw new BadRequestException(
+        'FAQ questions and answers must be non-blank',
+      );
+    }
     const data = {
       title,
+      faqs,
       description: dto.description,
       guidelines: dto.guidelines,
       publicEmail:
@@ -161,7 +178,7 @@ export class ProgrammesService {
     organizationId: string,
     id: string,
     actorId: string,
-    data: Partial<Programme>,
+    data: ProgrammeChanges,
   ) {
     try {
       const programme = await this.prisma.$transaction(

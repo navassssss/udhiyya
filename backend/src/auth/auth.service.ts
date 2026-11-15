@@ -58,6 +58,7 @@ export class AuthService {
   async register(
     dto: RegisterDto,
     clientMeta: SessionClientMetadata,
+    nameParts?: { firstName: string; lastName: string },
   ): Promise<{
     user: SafeAuthUserResponse;
     emailVerificationRequired: boolean;
@@ -104,6 +105,8 @@ export class AuthService {
         data: {
           email: normalizedEmail,
           name: dto.name.trim(),
+          firstName: nameParts?.firstName,
+          lastName: nameParts?.lastName,
           passwordHash,
           status: UserStatus.ACTIVE,
           emailVerifiedAt: null,
@@ -214,7 +217,7 @@ export class AuthService {
       throw new ForbiddenException('Account is currently suspended or inactive');
     }
 
-    if (this.authCfg.requireEmailVerification && !user.emailVerifiedAt) {
+    if (this.authCfg.requireEmailVerification && !user.emailVerifiedAt && !user.emailVerificationExempt) {
       await this.auditService.record({
         actorId: user.id,
         action: AuditAction.AUTH_LOGIN_FAILED,

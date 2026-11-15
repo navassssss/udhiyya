@@ -280,6 +280,14 @@ it('imports valid household CSV records atomically and reports invalid rows with
         errors: [{ row: 2, field: 'contact.email' }],
       });
     });
+  await send('name,address\nExample,Main Street\nExample,Main Street\n')
+    .expect(200)
+    .expect(({ body }) => {
+      expect(body).toMatchObject({
+        importedCount: 0,
+        errors: [{ row: 3, field: 'row' }],
+      });
+    });
   expect(importHouseholds).not.toHaveBeenCalled();
 
   await send(

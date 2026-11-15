@@ -69,9 +69,7 @@ export class GoogleOAuthService {
 
     if (
       authCfg.google.enabled &&
-      authCfg.google.clientId &&
-      authCfg.google.clientSecret &&
-      authCfg.google.callbackUrl
+      authCfg.google.clientId && (this.configService.get('AUTH_MODE') === 'brocoders' || (authCfg.google.clientSecret && authCfg.google.callbackUrl))
     ) {
       this.oauthClient = new OAuth2Client(
         authCfg.google.clientId,
@@ -89,7 +87,7 @@ export class GoogleOAuthService {
     }
     if (!this.authCfg.google.enabled || !this.oauthClient) {
       throw new ForbiddenException(
-        'Google OAuth is not enabled or missing GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET / GOOGLE_CALLBACK_URL',
+        'Google sign-in is disabled or incomplete',
       );
     }
     return this.oauthClient;

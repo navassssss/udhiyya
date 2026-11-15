@@ -3,7 +3,9 @@ import { ConditionalModule, ConfigModule, ConfigService } from '@nestjs/config';
 import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { AuditModule } from './audit/audit.module.js';
-import { AuthModule } from './auth/auth.module.js';
+import { BrocodersAuthHttpModule } from './auth/brocoders/brocoders-auth-http.module.js';
+import { LocalAuthHttpModule } from './auth/local-auth-http.module.js';
+import { enhancementLoaders, mountEnhancements } from './enhancements/enhancement-mount.module.js';
 import { CommonModule } from './common/common.module.js';
 import { GlobalExceptionFilter } from './common/filters/global-exception.filter.js';
 import { CsrfGuard } from './common/guards/csrf.guard.js';
@@ -79,10 +81,7 @@ import { UsersModule } from './users/users.module.js';
     CommonModule,
     AuditModule,
     EmailModule,
-    ConditionalModule.registerWhen(
-      LocalSessionsModule,
-      (env) => env.AUTH_MODE !== 'supabase',
-    ),
+    ConditionalModule.registerWhen(LocalSessionsModule, (env) => !env.AUTH_MODE || env.AUTH_MODE === 'local'),
     PermissionsModule,
     RolesModule,
     UsersModule,
@@ -97,10 +96,9 @@ import { UsersModule } from './users/users.module.js';
     DistributionModule,
     CommunicationsModule,
     ReportsModule,
-    ConditionalModule.registerWhen(
-      AuthModule,
-      (env) => env.AUTH_MODE !== 'supabase',
-    ),
+    ConditionalModule.registerWhen(LocalAuthHttpModule, (env) => !env.AUTH_MODE || env.AUTH_MODE === 'local'),
+    ConditionalModule.registerWhen(BrocodersAuthHttpModule, (env) => env.AUTH_MODE === 'brocoders'),
+    mountEnhancements(enhancementLoaders),
     HealthModule,
   ],
   providers: [

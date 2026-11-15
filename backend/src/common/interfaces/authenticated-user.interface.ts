@@ -17,6 +17,7 @@ export interface AuthenticatedUser {
   avatarUrl: string | null;
   status: UserStatus;
   emailVerifiedAt: Date | null;
+  emailVerificationExempt?: boolean;
   activeOrganizationId: string | null;
   sessionId: string;
   tokenVersion: number;

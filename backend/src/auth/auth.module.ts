@@ -8,7 +8,6 @@ import { EmailModule } from '../email/email.module.js';
 import { PermissionsModule } from '../permissions/permissions.module.js';
 import { PermissionsService } from '../permissions/permissions.service.js';
 import { SessionsModule } from '../sessions/sessions.module.js';
-import { AuthController } from './auth.controller.js';
 import { AuthService } from './auth.service.js';
 import { GoogleOAuthService } from './google-oauth.service.js';
 import { JwtStrategy } from './strategies/jwt.strategy.js';
@@ -36,7 +35,6 @@ export const AUTH_PLATFORM_OPTIONS = Symbol('AUTH_PLATFORM_OPTIONS');
     EmailModule,
     PermissionsModule,
   ],
-  controllers: [AuthController],
   providers: [
     AuthService,
     GoogleOAuthService,

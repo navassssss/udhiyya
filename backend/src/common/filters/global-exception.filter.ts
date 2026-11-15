@@ -31,8 +31,23 @@ export class GlobalExceptionFilter implements ExceptionFilter {
 
     const payload = this.buildErrorPayload(exception, request.url);
 
+    const path = request.url.split('?')[0] ?? '';
+    if (
+      process.env.AUTH_MODE === 'brocoders' &&
+      payload.statusCode === 400 &&
+      Array.isArray(payload.message) &&
+      (/\/auth(?:\/|$)/.test(path) ||
+        (request.method === 'POST' && path.endsWith('/users')))
+    ) {
+      payload.statusCode = HttpStatus.UNPROCESSABLE_ENTITY;
+      payload.error = 'Unprocessable Entity';
+    }
+
     if (payload.statusCode >= 500) {
-      const errorMsg = exception instanceof Error ? exception.message : 'Unknown internal error';
+      const errorMsg =
+        exception instanceof Error
+          ? exception.message
+          : 'Unknown internal error';
       this.logger.error(
         `[${request.method}] ${request.url} -> ${payload.statusCode}: ${errorMsg}`,
         exception instanceof Error && process.env.NODE_ENV !== 'production'
@@ -44,7 +59,10 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     this.adapterHost.httpAdapter.reply(response, payload, payload.statusCode);
   }
 
-  private buildErrorPayload(exception: unknown, path: string): ErrorResponsePayload {
+  private buildErrorPayload(
+    exception: unknown,
+    path: string,
+  ): ErrorResponsePayload {
     const timestamp = new Date().toISOString();
 
     if (exception instanceof HttpException) {
@@ -64,7 +82,10 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       const body = res as Record<string, unknown>;
       return {
         statusCode,
-        error: typeof body.error === 'string' ? body.error : HttpStatus[statusCode] ?? 'Error',
+        error:
+          typeof body.error === 'string'
+            ? body.error
+            : (HttpStatus[statusCode] ?? 'Error'),
         message:
           Array.isArray(body.message) || typeof body.message === 'string'
             ? (body.message as string | string[])

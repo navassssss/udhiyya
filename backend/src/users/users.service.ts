@@ -27,6 +27,8 @@ const SAFE_USER_SELECT = {
   id: true,
   email: true,
   name: true,
+  firstName: true,
+  lastName: true,
   avatarUrl: true,
   status: true,
   emailVerifiedAt: true,
@@ -90,7 +92,7 @@ export class UsersService {
     const updated = await this.prisma.user.update({
       where: { id: userId },
       data: {
-        ...(dto.name !== undefined ? { name: dto.name.trim() } : {}),
+        ...(dto.name !== undefined ? { name: dto.name.trim(), firstName: null, lastName: null } : {}),
         ...(dto.avatarUrl !== undefined ? { avatarUrl: dto.avatarUrl } : {}),
       },
       select: SAFE_USER_SELECT,

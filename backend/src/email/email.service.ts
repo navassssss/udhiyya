@@ -111,7 +111,9 @@ export class EmailService {
   }
 
   sendVerificationEmail(to: string, name: string, rawToken: string, expiresIn: string): void {
-    const verificationUrl = `${this.frontendUrl}/verify-email?token=${encodeURIComponent(rawToken)}`;
+    const verificationUrl = this.configService.get('AUTH_MODE') === 'brocoders'
+      ? this.frontendUrl + '/confirm-email?hash=' + encodeURIComponent(rawToken)
+      : `${this.frontendUrl}/verify-email?token=${encodeURIComponent(rawToken)}`;
     const rendered = renderEmailVerificationEmail({
       appName: this.appName,
       name,
@@ -125,8 +127,19 @@ export class EmailService {
     });
   }
 
+  sendNewEmailConfirmation(to: string, name: string, token: string): void {
+    const verificationUrl = this.frontendUrl + '/confirm-new-email?hash=' + encodeURIComponent(token);
+    this.enqueueNonBlocking({
+      to,
+      ...renderEmailVerificationEmail({ appName: this.appName, name, verificationUrl, expiresIn: '24h' }),
+      templateType: 'email_verification',
+    });
+  }
+
   sendPasswordResetEmail(to: string, name: string, rawToken: string, expiresIn: string): void {
-    const resetUrl = `${this.frontendUrl}/reset-password?token=${encodeURIComponent(rawToken)}`;
+    const resetUrl = this.configService.get('AUTH_MODE') === 'brocoders'
+      ? this.frontendUrl + '/password-change?hash=' + encodeURIComponent(rawToken)
+      : `${this.frontendUrl}/reset-password?token=${encodeURIComponent(rawToken)}`;
     const rendered = renderPasswordResetEmail({
       appName: this.appName,
       name,

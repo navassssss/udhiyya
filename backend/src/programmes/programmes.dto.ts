@@ -1,6 +1,9 @@
 import { Type } from 'class-transformer';
 import {
+  ArrayMaxSize,
   Equals,
+  IsArray,
+  IsObject,
   IsEmail,
   IsInt,
   IsISO8601,
@@ -43,7 +46,27 @@ export class ProgrammeContactDto {
   email!: string;
 }
 
+export class ProgrammeFaqDto {
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(300)
+  question!: string;
+
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(2000)
+  answer!: string;
+}
+
 export class UpdateProgrammeDto {
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(25)
+  @IsObject({ each: true })
+  @ValidateNested({ each: true })
+  @Type(() => ProgrammeFaqDto)
+  faqs?: ProgrammeFaqDto[];
+
   @IsOptional()
   @IsString()
   @IsNotEmpty()

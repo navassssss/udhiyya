@@ -40,21 +40,26 @@ function splitCsv(raw: string | undefined): string[] {
 }
 
 export const appConfig = registerAs('app', (): AppConfig => {
-  const nodeEnv = (process.env.NODE_ENV as AppConfig['nodeEnv']) ?? 'development';
+  const nodeEnv =
+    (process.env.NODE_ENV as AppConfig['nodeEnv']) ?? 'development';
   return {
     nodeEnv,
     port: Number(process.env.PORT ?? 3000),
     appName: process.env.APP_NAME ?? 'AuthPlatform',
     appUrl: process.env.APP_URL ?? 'http://localhost:3000',
     frontendUrl: process.env.FRONTEND_URL ?? 'http://localhost:3001',
-    apiPrefix: (process.env.API_PREFIX ?? '').replace(/^\/+|\/+$/g, ''),
+    apiPrefix: (
+      process.env.API_PREFIX ||
+      (process.env.AUTH_MODE === 'brocoders' ? 'api/v1' : '')
+    ).replace(/^\/+|\/+$/g, ''),
     trustProxy: process.env.TRUST_PROXY === 'true',
     allowedOrigins: splitCsv(process.env.ALLOWED_ORIGINS),
     allowedOAuthRedirectUrls: splitCsv(process.env.ALLOWED_OAUTH_REDIRECT_URLS),
     cookie: {
       secret: process.env.COOKIE_SECRET ?? '',
       domain: process.env.COOKIE_DOMAIN || undefined,
-      sameSite: (process.env.COOKIE_SAME_SITE as 'lax' | 'strict' | 'none') ?? 'lax',
+      sameSite:
+        (process.env.COOKIE_SAME_SITE as 'lax' | 'strict' | 'none') ?? 'lax',
       secure: process.env.COOKIE_SECURE === 'true' || nodeEnv === 'production',
     },
     csrfProtectionEnabled: process.env.CSRF_PROTECTION_ENABLED !== 'false',
@@ -62,7 +67,8 @@ export const appConfig = registerAs('app', (): AppConfig => {
       url: process.env.DATABASE_URL ?? '',
       directUrl: process.env.DIRECT_URL || undefined,
       ssl: process.env.DATABASE_SSL === 'true',
-      sslRejectUnauthorized: process.env.DATABASE_SSL_REJECT_UNAUTHORIZED !== 'false',
+      sslRejectUnauthorized:
+        process.env.DATABASE_SSL_REJECT_UNAUTHORIZED !== 'false',
     },
     throttle: {
       ttlMs: Number(process.env.THROTTLE_TTL_MS ?? 60000),

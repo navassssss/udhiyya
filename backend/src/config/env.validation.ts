@@ -73,8 +73,8 @@ export class EnvironmentVariables {
   @IsBoolean()
   DATABASE_SSL_REJECT_UNAUTHORIZED: boolean = true;
 
-  @IsIn(['local', 'supabase'])
-  AUTH_MODE: 'local' | 'supabase' = 'local';
+  @IsIn(['local', 'supabase', 'brocoders'])
+  AUTH_MODE: 'local' | 'supabase' | 'brocoders' = 'local';
 
   @IsOptional()
   @IsString()
@@ -282,8 +282,12 @@ export function validateEnv(
         'Set SUPABASE_URL to the project origin and SUPABASE_PUBLISHABLE_KEY',
       );
     }
-  } else if (!validated.JWT_ACCESS_SECRET || !validated.COOKIE_SECRET) {
-    throw new Error('Local auth requires JWT_ACCESS_SECRET and COOKIE_SECRET');
+  } else if (!validated.JWT_ACCESS_SECRET || (validated.AUTH_MODE === 'local' && !validated.COOKIE_SECRET)) {
+    throw new Error('JWT auth requires JWT_ACCESS_SECRET, and legacy cookie auth requires COOKIE_SECRET');
+  }
+
+  if (validated.AUTH_MODE === 'brocoders' && validated.GOOGLE_OAUTH_ENABLED && !validated.GOOGLE_CLIENT_ID) {
+    throw new Error('GOOGLE_CLIENT_ID is required for the direct Google popup');
   }
 
   if (validated.AUTH_MODE === 'local' && validated.GOOGLE_OAUTH_ENABLED) {
@@ -309,7 +313,7 @@ export function validateEnv(
   if (validated.NODE_ENV === 'production') {
     const weakMarkers = ['change-this', 'dev-only', 'example', 'secret'];
     if (
-      validated.AUTH_MODE === 'local' &&
+      validated.AUTH_MODE !== 'supabase' &&
       weakMarkers.some((m) =>
         (validated.JWT_ACCESS_SECRET ?? '').toLowerCase().includes(m),
       )

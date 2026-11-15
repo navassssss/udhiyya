@@ -127,7 +127,8 @@ async function bootstrap(): Promise<void> {
   const logger = new Logger('Bootstrap');
   // The starter's legacy cookie endpoints still use the Express response API.
   const app =
-    process.env.AUTH_MODE === 'supabase'
+    process.env.AUTH_MODE === 'supabase' ||
+    process.env.AUTH_MODE === 'brocoders'
       ? await NestFactory.create<NestFastifyApplication>(
           AppModule,
           new FastifyAdapter({

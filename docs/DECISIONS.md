@@ -31,3 +31,9 @@ Append only. Add one entry at the end for each decision about scope, architectur
 - **Decision:** Advance EF-03 (Financial Intelligence) from Optional to Selected. Implemented as an isolated vertical slice in `enhancements/EF-03-financial-intelligence/` behind `FEATURE_EF_03` (default off), providing automated expense categorisation, financial anomaly detection, and reconciliation summaries via `/api/ext/EF-03/*`.
 - **Reason and trade-offs:** Solves critical committee pain point regarding manual bookkeeping and reconciliation errors across participant payments and operational expenses, with low integration risk and zero MVP schema mutations.
 - **Affected files:** `docs/EXTRA-FEATURE-PLAN.md`, `docs/TASKS/M3.md`, `enhancements/EF-03-financial-intelligence/`
+
+### D-005: Brocoders-compatible Nest authentication
+- **Date:** 2026-11-15 · **Status:** Accepted · **Decided by:** Project owner
+- **Decision:** QurbaniOS uses the Brocoders authentication HTTP contract at `/api/v1`, with Nest-issued JWTs and rotating refresh tokens. Email is confirmed through Nest mail links. Continue with Google uses the Google Identity Services popup and Nest verification of the Google credential.
+- **Reason and trade-offs:** Align the API with the authentication handoff sent to M1 while retaining the NestJS 12, Fastify and Prisma backend.
+- **Affected files:** `backend/FRONTEND-AUTH.md`, `docs/API-CONTRACT.md`, `docs/ARCHITECTURE.md`, backend auth and Prisma migrations.

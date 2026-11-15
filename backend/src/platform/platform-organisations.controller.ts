@@ -1,3 +1,7 @@
+import {
+  PlatformAuditQuery,
+  PlatformFeaturesDto,
+} from './platform-organisations.dto.js';
 import { ProgrammeListQuery } from '../programmes/programmes.dto.js';
 import {
   Body,
@@ -78,5 +82,35 @@ export class PlatformOrganisationsController {
     @CurrentUser() actor: AuthenticatedUser,
   ) {
     return this.organisations.revoke(id, invitationId, actor);
+  }
+
+  @Get(':id/features')
+  features(@Param('id', ParseUUIDPipe) id: string) {
+    return this.organisations.features(id);
+  }
+
+  @Patch(':id/features')
+  updateFeatures(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() actor: AuthenticatedUser,
+    @Body() input: PlatformFeaturesDto,
+  ) {
+    return this.organisations.updateFeatures(id, actor.id, input);
+  }
+}
+
+@Controller('platform')
+@Roles('super_admin')
+export class PlatformOverviewController {
+  constructor(private readonly organisations: PlatformOrganisationsService) {}
+
+  @Get('dashboard')
+  dashboard() {
+    return this.organisations.dashboard();
+  }
+
+  @Get('audit-events')
+  auditEvents(@Query() query: PlatformAuditQuery) {
+    return this.organisations.auditEvents(query);
   }
 }

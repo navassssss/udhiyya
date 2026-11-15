@@ -416,7 +416,7 @@ export class OrganizationsService implements OnModuleInit {
 
     await this.auditService.record({
       actorId: actor.id,
-      action: AuditAction.ORG_INVITATION_SENT,
+      action: recipientName ? 'PLATFORM_INVITATION_SENT' : AuditAction.ORG_INVITATION_SENT,
       targetType: 'OrganizationInvitation',
       targetId: invitation.id,
       organizationId,
@@ -449,6 +449,7 @@ export class OrganizationsService implements OnModuleInit {
     organizationId: string,
     invitationId: string,
     actor: AuthenticatedUser,
+    platformAction = false,
   ) {
     this.assertOrganizationsEnabled();
 
@@ -470,7 +471,7 @@ export class OrganizationsService implements OnModuleInit {
 
     await this.auditService.record({
       actorId: actor.id,
-      action: AuditAction.ORG_INVITATION_REVOKED,
+      action: platformAction ? 'PLATFORM_INVITATION_REVOKED' : AuditAction.ORG_INVITATION_REVOKED,
       targetType: 'OrganizationInvitation',
       targetId: invitation.id,
       organizationId,
@@ -564,7 +565,7 @@ export class OrganizationsService implements OnModuleInit {
       await this.auditService.record(
         {
           actorId: actor.id,
-          action: AuditAction.ORG_INVITATION_ACCEPTED,
+          action: expectedRoleSlug ? 'PLATFORM_INVITATION_ACCEPTED' : AuditAction.ORG_INVITATION_ACCEPTED,
           targetType: 'OrganizationInvitation',
           targetId: invitation.id,
           organizationId: invitation.organizationId,

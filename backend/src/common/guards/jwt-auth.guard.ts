@@ -60,7 +60,11 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
         ? explicitEmailPolicy
         : globalRequireVerified;
 
-    if (mustBeVerified && !user.emailVerifiedAt) {
+    if (
+      mustBeVerified &&
+      !user.emailVerifiedAt &&
+      !(explicitEmailPolicy !== true && user.emailVerificationExempt)
+    ) {
       throw new ForbiddenException({
         code: 'EMAIL_NOT_VERIFIED',
         message: 'Email verification is required to access this resource',

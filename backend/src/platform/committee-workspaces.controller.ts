@@ -37,8 +37,7 @@ export class CommitteeWorkspacesController {
     );
     return {
       organisationId: result.organizationId,
-      role:
-        'committee_admin',
+      role: 'committee_admin',
     };
   }
 }

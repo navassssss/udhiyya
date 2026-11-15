@@ -1,3 +1,4 @@
+import { LegacyOrganizationRoutesGuard } from './legacy-organization-routes.guard.js';
 import {
   Body,
   Controller,
@@ -9,6 +10,7 @@ import {
   ParseUUIDPipe,
   Patch,
   Post,
+  UseGuards,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -41,6 +43,7 @@ import { OrganizationsService } from './organizations.service.js';
 @ApiTags('Organizations')
 @ApiBearerAuth()
 @Controller('organizations')
+@UseGuards(LegacyOrganizationRoutesGuard)
 export class OrganizationsController {
   constructor(private readonly organizationsService: OrganizationsService) {}
 
