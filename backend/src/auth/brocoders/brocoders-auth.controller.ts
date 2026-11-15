@@ -128,7 +128,7 @@ export class BrocodersAuthController {
   }
 
   @Public()
-  @Throttle({ auth: { limit: 20, ttl: 60000 } })
+  @Throttle({ default: { limit: 20, ttl: 60000 } })
   @Post('refresh')
   @HttpCode(200)
   async refresh(

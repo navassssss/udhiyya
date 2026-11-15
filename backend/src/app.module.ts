@@ -68,11 +68,6 @@ import { UsersModule } from './users/users.module.js';
               ttl: throttle.ttlMs,
               limit: throttle.limit,
             },
-            {
-              name: 'auth',
-              ttl: throttle.authTtlMs,
-              limit: throttle.authLimit,
-            },
           ],
         };
       },

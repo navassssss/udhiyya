@@ -91,7 +91,7 @@ export class AuthController {
 
   @Public()
   @SkipCsrf()
-  @Throttle({ auth: { limit: 10, ttl: 60000 } })
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
   @Post('register')
   @ApiOperation({ summary: 'Register a new user account with email and password' })
   @ApiResponse({ status: 201, description: 'Account registered and verification email queued' })
@@ -103,7 +103,7 @@ export class AuthController {
 
   @Public()
   @SkipCsrf()
-  @Throttle({ auth: { limit: 10, ttl: 60000 } })
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
   @Post('login')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
@@ -134,7 +134,7 @@ export class AuthController {
   }
 
   @Public()
-  @Throttle({ auth: { limit: 20, ttl: 60000 } })
+  @Throttle({ default: { limit: 20, ttl: 60000 } })
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
   @ApiCookieAuth('refresh_token')
@@ -208,7 +208,7 @@ export class AuthController {
 
   @Public()
   @SkipCsrf()
-  @Throttle({ auth: { limit: 10, ttl: 60000 } })
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
   @Post('verify-email')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Verify user email with single-use verification token' })
@@ -220,7 +220,7 @@ export class AuthController {
 
   @Public()
   @SkipCsrf()
-  @Throttle({ auth: { limit: 5, ttl: 60000 } })
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
   @Post('resend-verification')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Resend email verification link (anti-enumeration safe)' })
@@ -234,7 +234,7 @@ export class AuthController {
 
   @Public()
   @SkipCsrf()
-  @Throttle({ auth: { limit: 5, ttl: 60000 } })
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
   @Post('forgot-password')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Request a password reset email (anti-enumeration safe)' })
@@ -245,7 +245,7 @@ export class AuthController {
 
   @Public()
   @SkipCsrf()
-  @Throttle({ auth: { limit: 10, ttl: 60000 } })
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
   @Post('reset-password')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
@@ -346,7 +346,7 @@ export class AuthController {
 
   @Public()
   @SkipCsrf()
-  @Throttle({ auth: { limit: 10, ttl: 60000 } })
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
   @Post('google')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({

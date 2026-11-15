@@ -18,6 +18,8 @@ type ProgrammeChanges = Omit<Partial<Programme>, 'faqs'> & {
 
 function projectPublic(programme: Programme) {
   return {
+    id: programme.id,
+    organisationId: programme.organizationId,
     year: programme.year,
     title: programme.title,
     status: programme.status,

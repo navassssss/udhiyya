@@ -161,11 +161,12 @@ it('limits the anonymous programme response to published records and public fiel
     .expect(200)
     .expect(({ body }) => {
       expect(body).toMatchObject({
+        id: programme.id,
+        organisationId: orgId,
         title: programme.title,
         price: { amountMinor: 100, currency: 'INR' },
       });
       expect(body).not.toHaveProperty('registrationLimit');
-      expect(body).not.toHaveProperty('organisationId');
     });
 });
 

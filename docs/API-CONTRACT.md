@@ -40,10 +40,12 @@ Organisation detail (`contact` is private platform/committee contact information
 {"id":"org_demo","name":"Example Mahallu","locality":"Example Town","contact":{"email":"office@example.test"},"status":"onboarding"}
 ```
 
-Programme detail and public projection share these proposed fields. The committee response also includes `id`, `organisationId` and `registrationLimit`. Public contact comes from the programme's explicitly published contact field.
+Programme detail and public projection share these fields, including the opaque `id` and `organisationId` required to open authenticated participant routes. The committee response additionally includes `registrationLimit`. Public contact comes from the programme's explicitly published contact field.
 
 ```json
 {
+  "id": "opaque-programme-id",
+  "organisationId": "opaque-organisation-id",
   "year": 2027,
   "title": "Annual Aḍḥiyah Programme",
   "status": "published",
