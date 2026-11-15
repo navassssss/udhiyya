@@ -2,7 +2,6 @@ import { useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import {
   ArrowRight,
-  KeyRound,
   Mail,
   UserPlus,
   LogIn,
@@ -15,8 +14,15 @@ import { toast } from "sonner";
 
 type AuthMode = "signin" | "signup" | "forgot";
 
-export function LoginPage() {
-  const [mode, setMode] = useState<AuthMode>("signin");
+export function LoginPage({ initialMode }: { initialMode?: AuthMode } = {}) {
+  const [mode, setMode] = useState<AuthMode>(() => {
+    if (initialMode) return initialMode;
+    if (typeof window !== "undefined") {
+      if (window.location.pathname.includes("signup")) return "signup";
+      if (window.location.pathname.includes("forgot")) return "forgot";
+    }
+    return "signin";
+  });
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
@@ -140,18 +146,6 @@ export function LoginPage() {
           <UserPlus className="mr-1.5 inline size-3.5" />
           Register
         </button>
-        <button
-          type="button"
-          onClick={() => setMode("forgot")}
-          className={`flex-1 rounded-md py-1.5 text-xs font-medium transition-colors ${
-            mode === "forgot"
-              ? "bg-card text-foreground shadow-sm"
-              : "text-muted-foreground hover:text-foreground"
-          }`}
-        >
-          <KeyRound className="mr-1.5 inline size-3.5" />
-          Recovery
-        </button>
       </div>
 
       {/* Authentication Form */}
@@ -221,8 +215,8 @@ export function LoginPage() {
               </span>
             </div>
             <GoogleSignIn
-              onSuccess={() => {
-                redirectForRole("participant");
+              onSuccess={(p) => {
+                redirectForRole(p?.role || "participant");
               }}
             />
           </div>

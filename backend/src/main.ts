@@ -35,11 +35,17 @@ function configureCommon(app: INestApplication): AppConfig {
         callback(null, true);
         return;
       }
-      if (appCfg.allowedOrigins.includes(origin)) {
+      const isAllowed =
+        appCfg.allowedOrigins.includes(origin) ||
+        appCfg.allowedOrigins.includes(origin.replace(/\/+$/, '')) ||
+        (typeof origin === 'string' && /\.vercel\.app$/.test(new URL(origin).hostname)) ||
+        (appCfg.nodeEnv !== 'production' && origin.startsWith('http://localhost'));
+
+      if (isAllowed) {
         callback(null, true);
         return;
       }
-      callback(new Error('Origin not allowed by CORS'), false);
+      callback(null, false);
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
@@ -91,6 +97,24 @@ export async function configureFastifyApp(
     contentSecurityPolicy: appCfg.nodeEnv === 'production' ? undefined : false,
     crossOriginEmbedderPolicy: false,
   });
+
+  if (appCfg.apiPrefix) {
+    const fastifyInstance = app.getHttpAdapter().getInstance();
+    fastifyInstance.addHook('onRequest', (req: any, _reply: any, done: () => void) => {
+      const rawUrl: string = req.raw?.url || req.url || '';
+      if (
+        !rawUrl.startsWith(`/${appCfg.apiPrefix}`) &&
+        !rawUrl.startsWith('/docs') &&
+        !rawUrl.startsWith('/health')
+      ) {
+        const rewritten = `/${appCfg.apiPrefix}${rawUrl}`;
+        if (req.raw) req.raw.url = rewritten;
+        req.url = rewritten;
+      }
+      done();
+    });
+  }
+
   return appCfg;
 }
 

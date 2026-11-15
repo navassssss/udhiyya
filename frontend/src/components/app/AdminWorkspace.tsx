@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Plus,
   ArrowRight,
@@ -223,7 +223,7 @@ const config: Record<
     ],
     fields: [
       { key: "recipient", label: "Recipient reference" },
-      { key: "pathway", label: "Pathway", options: ["Participant", "Public beneficiary"] },
+      { key: "pathway", label: "Pathway", options: ["Participant share", "Community quota"] },
       { key: "quantity", label: "Quantity (kg)", type: "number" },
       { key: "location", label: "Collection location" },
       { key: "time", label: "Collection window" },
@@ -256,7 +256,13 @@ const config: Record<
     ],
   },
 };
-export function AdminWorkspace({ section }: { section: string }) {
+export function AdminWorkspace({
+  section,
+  initialSelectedId,
+}: {
+  section: string;
+  initialSelectedId?: string;
+}) {
   const { profile } = useAuth();
   const isFeatureEf01Enabled = import.meta.env.VITE_FEATURE_EF_01 !== "false";
   const { records, update, add, programmeStatus, setProgrammeStatus, policy, setPolicy } =
@@ -265,6 +271,16 @@ export function AdminWorkspace({ section }: { section: string }) {
   const [filter, setFilter] = useState("All statuses");
   const [modal, setModal] = useState<string | null>(null);
   const [selected, setSelected] = useState<Row | null>(null);
+
+  useEffect(() => {
+    if (initialSelectedId && records.participants) {
+      const match = records.participants.find((p) => p.id === initialSelectedId);
+      if (match) {
+        setSelected(match);
+        setModal("details");
+      }
+    }
+  }, [initialSelectedId, records.participants]);
   const [importRows, setImportRows] = useState<Row[]>([]);
   const [importFile, setImportFile] = useState<File | null>(null);
   const [importStage, setImportStage] = useState(0);
@@ -486,7 +502,7 @@ export function AdminWorkspace({ section }: { section: string }) {
         .catch(() => {});
     }
 
-    toast.success(`${selected ? "Updated" : "Added"} sample record`);
+    toast.success(`${selected ? "Updated" : "Created"} ${title.toLowerCase() || "record"}`);
     setModal(null);
   }
   const metricItems =
@@ -1233,9 +1249,9 @@ export function AdminWorkspace({ section }: { section: string }) {
         onClose={() => setModal(null)}
         title={
           modal === "add"
-            ? "Add sample record"
+            ? `New ${title || "record"}`
             : modal === "edit"
-              ? "Edit record"
+              ? `Edit ${title || "record"}`
               : modal === "import"
                 ? "Import household directory"
                 : modal === "allocate"
@@ -1285,12 +1301,14 @@ export function AdminWorkspace({ section }: { section: string }) {
         {modal === "details" && selected && (
           <>
             <dl className="divide-y divide-border">
-              {Object.entries(selected).map(([k, v]) => (
-                <div key={k} className="grid grid-cols-[110px_1fr] gap-4 py-3 text-sm">
-                  <dt className="capitalize text-muted-foreground">{k}</dt>
-                  <dd className="break-words font-medium">{v || "—"}</dd>
-                </div>
-              ))}
+              {Object.entries(selected)
+                .filter(([_, v]) => v !== "" && v !== null && v !== undefined && v !== "—")
+                .map(([k, v]) => (
+                  <div key={k} className="grid grid-cols-[120px_1fr] gap-4 py-2.5 text-sm">
+                    <dt className="capitalize text-muted-foreground">{k.replace(/([A-Z])/g, " $1").trim()}</dt>
+                    <dd className="break-words font-medium">{String(v)}</dd>
+                  </div>
+                ))}
             </dl>
             {(section === "participants" || section === "dashboard") && (
               <>

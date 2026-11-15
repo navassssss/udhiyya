@@ -89,7 +89,7 @@ export const volunteerNav = [
   { slug: "department", label: "Department", icon: Layers },
   { slug: "schedule", label: "Schedule & team", icon: CalendarDays },
   { slug: "issues", label: "Issue reporting", icon: AlertCircle },
-  { slug: "updates", label: "Updates & profile", icon: UserRound },
+  { slug: "updates", label: "Notifications & profile", icon: Bell },
 ];
 export const participantNav = [
   { slug: "overview", label: "Overview", icon: Home },
@@ -99,7 +99,7 @@ export const participantNav = [
   { slug: "payments", label: "Payments & receipts", icon: CreditCard },
   { slug: "allocation", label: "Group allocation", icon: Layers },
   { slug: "collection", label: "My collection", icon: Package },
-  { slug: "updates", label: "Updates", icon: Bell },
+  { slug: "updates", label: "Notifications", icon: Bell },
 ];
 export const superAdminNav = [
   { slug: "dashboard", label: "Platform dashboard", icon: Home },
@@ -120,7 +120,7 @@ export function PortalShell({
   children: ReactNode;
 }) {
   const { account, ready, logout } = useDemo();
-  const { profile, signOut: authSignOut, isConfigured } = useAuth();
+  const { profile, signOut: authSignOut, isConfigured, activeProvider } = useAuth();
   const nav = useNavigate();
   const [menu, setMenu] = useState(false);
   const list =
@@ -284,11 +284,9 @@ export function PortalShell({
           </div>
           <div className="flex shrink-0 items-center gap-3">
             <span
-              className={`hidden rounded-md px-2 py-1 text-[10px] font-medium sm:block ${
-                isConfigured ? "bg-emerald-500/10 text-emerald-700" : "bg-sun/20 text-foreground"
-              }`}
+              className="hidden rounded-md px-2 py-1 text-[10px] font-medium sm:block bg-emerald-500/10 text-emerald-700"
             >
-              {isConfigured ? "Live Supabase session" : "Sample data · not live"}
+              {activeProvider === "nestjs" ? "NestJS JWT Active" : "Supabase Active"}
             </span>
             <Link
               to="/"

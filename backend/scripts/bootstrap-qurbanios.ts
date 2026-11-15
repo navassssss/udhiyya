@@ -9,7 +9,14 @@ if (!connectionString) {
   throw new Error('DATABASE_URL is not set');
 }
 
-const pool = new pg.Pool({ connectionString });
+const useSsl =
+  process.env.DATABASE_SSL === 'true' ||
+  connectionString.includes('supabase.com') ||
+  connectionString.includes('sslmode=require');
+const pool = new pg.Pool({
+  connectionString,
+  ssl: useSsl ? { rejectUnauthorized: false } : undefined,
+});
 const prisma = new PrismaClient({ adapter: new PrismaPg(pool) });
 
 async function hashPassword(plain: string): Promise<string> {

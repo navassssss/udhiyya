@@ -100,9 +100,18 @@ export function VolunteerWorkspace({ section }: { section: string }) {
               <ArrowRight className="size-4" />
             </Link>
           </div>
-          <div className="grid gap-8 lg:grid-cols-2">
+          <div className="space-y-6">
             <section>
-              <h2 className="mb-5 text-lg font-bold">My pending tasks</h2>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-bold">My pending tasks</h2>
+                <Link
+                  to="/volunteer/$section"
+                  params={{ section: "tasks" }}
+                  className="text-xs text-cobalt hover:underline font-medium"
+                >
+                  View all tasks →
+                </Link>
+              </div>
               <DataTable
                 rows={tasks.filter((t) => t.status !== "Completed")}
                 columns={[
@@ -115,18 +124,6 @@ export function VolunteerWorkspace({ section }: { section: string }) {
                   </Button>
                 )}
               />
-            </section>
-            <section>
-              <h2 className="mb-5 text-lg font-bold">Committee instructions</h2>
-              <div className="divide-y divide-border">
-                {notices.slice(0, 3).map((a) => (
-                  <article key={a.id} className="py-4">
-                    <p className="text-xs text-cobalt">{a.date}</p>
-                    <h3 className="mt-2 font-semibold">{a.title}</h3>
-                    <p className="mt-2 text-sm text-muted-foreground">{a.message}</p>
-                  </article>
-                ))}
-              </div>
             </section>
           </div>
         </>
@@ -424,7 +421,15 @@ export function VolunteerWorkspace({ section }: { section: string }) {
                 date: new Date().toISOString(),
                 status: "Open",
               });
-              toast.success("Issue submitted to the sample committee monitoring queue");
+              operationsAdapter
+                .reportIssue("org_demo", "2027", {
+                  category: String(d.get("category")),
+                  description: String(d.get("description")),
+                  reference: String(d.get("reference")),
+                  department: dept,
+                })
+                .catch(() => {});
+              toast.success("Issue submitted to committee monitoring queue");
               setModal(null);
             }}
           >

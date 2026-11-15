@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Headers,
@@ -49,7 +50,7 @@ export class BrocodersAuthController {
   ) {}
 
   @Public()
-  @Post('email/register')
+  @Post(['email/register', 'register'])
   @HttpCode(204)
   async register(
     @Body() input: EmailRegisterDto,
@@ -69,10 +70,12 @@ export class BrocodersAuthController {
   }
 
   @Public()
-  @Post('email/confirm')
+  @Post(['email/confirm', 'verify-email'])
   @HttpCode(204)
   async confirm(@Body() input: EmailHashDto, @Req() request: RequestMetadata) {
-    await this.auth.verifyEmail(input.hash, client(request));
+    const token = input.hash || input.token;
+    if (!token) throw new BadRequestException('Verification token or hash is required');
+    await this.auth.verifyEmail(token, client(request));
   }
 
   @Post('email/change')
@@ -88,11 +91,13 @@ export class BrocodersAuthController {
   @Post('email/confirm/new')
   @HttpCode(204)
   async confirmNew(@Body() input: EmailHashDto) {
-    await this.emailChange.confirm(input.hash);
+    const token = input.hash || input.token;
+    if (!token) throw new BadRequestException('Verification token or hash is required');
+    await this.emailChange.confirm(token);
   }
 
   @Public()
-  @Post('email/login')
+  @Post(['email/login', 'login'])
   @HttpCode(200)
   async login(@Body() input: EmailLoginDto, @Req() request: RequestMetadata) {
     const bundle = await this.auth.login(
@@ -103,7 +108,7 @@ export class BrocodersAuthController {
   }
 
   @Public()
-  @Post('google/login')
+  @Post(['google/login', 'google'])
   @HttpCode(200)
   async googleLogin(
     @Body() input: DirectGoogleDto,
@@ -153,19 +158,21 @@ export class BrocodersAuthController {
   }
 
   @Public()
-  @Post('forgot/password')
+  @Post(['forgot/password', 'forgot-password'])
   @HttpCode(204)
   async forgot(@Body() input: EmailDto, @Req() request: RequestMetadata) {
     await this.auth.forgotPassword(input.email, client(request));
   }
 
   @Public()
-  @Post('reset/password')
+  @Post(['reset/password', 'reset-password'])
   @HttpCode(204)
   async reset(@Body() input: EmailResetDto, @Req() request: RequestMetadata) {
+    const token = input.hash || input.token;
+    if (!token) throw new BadRequestException('Password reset token or hash is required');
     await this.auth.resetPassword(
       {
-        token: input.hash,
+        token,
         newPassword: input.password,
         confirmPassword: input.password,
       },

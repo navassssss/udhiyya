@@ -21,7 +21,7 @@ export function AuthShell({
           <p className="mt-3 text-muted-foreground">{subtitle}</p>
           <div className="mt-8">{children}</div>
           <p className="mt-8 text-xs leading-relaxed text-muted-foreground">
-            Design template: no real account is created. Demo access lasts in this browser tab only.
+            Enterprise role-based security · Encrypted session tokens · Mahallu isolation
           </p>
         </div>
       </div>

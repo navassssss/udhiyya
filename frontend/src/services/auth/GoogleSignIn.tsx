@@ -1,9 +1,10 @@
 import { useEffect, useRef } from "react";
 import { toast } from "sonner";
 import { jwtAdapter } from "./jwt.adapter";
+import type { AuthUserProfile } from "./auth.types";
 
 interface GoogleSignInProps {
-  onSuccess?: () => void;
+  onSuccess?: (profile?: AuthUserProfile) => void;
   onError?: (err: Error) => void;
 }
 
@@ -26,13 +27,13 @@ export function GoogleSignIn({ onSuccess, onError }: GoogleSignInProps) {
         return;
       }
 
-      const { error } = await jwtAdapter.loginWithGoogle(response.credential);
+      const { error, profile } = await jwtAdapter.loginWithGoogle(response.credential);
       if (error) {
         toast.error(error.message || "Google sign in failed");
         onError?.(error);
       } else {
         toast.success("Signed in with Google!");
-        onSuccess?.();
+        onSuccess?.(profile);
       }
     };
 

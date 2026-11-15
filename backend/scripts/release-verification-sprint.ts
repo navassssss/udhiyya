@@ -366,7 +366,7 @@ async function run() {
     }),
   });
   const dbRejected = await prisma.payment.findUniqueOrThrow({ where: { id: rejectedSubmission.id } });
-  console.log('  ✓ Committee rejected payment in PostgreSQL ledger (Status:', dbRejected.status, ', Reason:', dbRejected.verificationReason, ')');
+  console.log('  ✓ Committee rejected payment in PostgreSQL ledger (Status:', dbRejected.status, ', Reason:', dbRejected.decisionReason, ')');
   if (dbRejected.status !== 'rejected') throw new Error('Payment status in DB must be rejected');
 
   // Verify participant's official balance via GET me/payments is NOT credited after rejection

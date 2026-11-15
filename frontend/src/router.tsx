@@ -94,6 +94,12 @@ const aboutRoute = createRoute({
   component: () => <ProgrammePage section="about" />,
 });
 
+const processRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/process",
+  component: () => <ProgrammePage section="process" />,
+});
+
 const guidelinesRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/guidelines",
@@ -129,19 +135,19 @@ const distributionRoute = createRoute({
 const loginRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/login",
-  component: LoginPage,
+  component: () => <LoginPage initialMode="signin" />,
 });
 
 const signupRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/signup",
-  component: LoginPage,
+  component: () => <LoginPage initialMode="signup" />,
 });
 
 const forgotPasswordRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/forgot-password",
-  component: LoginPage,
+  component: () => <LoginPage initialMode="forgot" />,
 });
 
 const resetPasswordRoute = createRoute({
@@ -235,7 +241,7 @@ const adminRegistrationDetailRoute = createRoute({
     return (
       <ProtectedRoute allowedRoles={["committee_admin", "super_admin"]}>
         <PortalShell kind="admin" section="participants">
-          <AdminWorkspace key={id} section="participants" />
+          <AdminWorkspace key={id} section="participants" initialSelectedId={id} />
         </PortalShell>
       </ProtectedRoute>
     );
@@ -330,6 +336,7 @@ const routeTree = rootRoute.addChildren([
   indexRoute,
   programmeRoute,
   aboutRoute,
+  processRoute,
   guidelinesRoute,
   faqRoute,
   contactRoute,

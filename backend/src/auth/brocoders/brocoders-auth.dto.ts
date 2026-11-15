@@ -5,6 +5,7 @@ import {
   IsEmail,
   IsNotEmpty,
   IsObject,
+  IsOptional,
   IsString,
   MaxLength,
   MinLength,
@@ -26,14 +27,19 @@ export class EmailLoginDto extends EmailDto {
 
 export class EmailRegisterDto extends EmailDto {
   @IsString()
-  @IsNotEmpty()
+  @IsOptional()
   @MaxLength(100)
-  firstName!: string;
+  firstName?: string;
 
   @IsString()
-  @IsNotEmpty()
+  @IsOptional()
   @MaxLength(100)
-  lastName!: string;
+  lastName?: string;
+
+  @IsString()
+  @IsOptional()
+  @MaxLength(200)
+  name?: string;
 
   @IsString()
   @MinLength(6)
@@ -43,9 +49,16 @@ export class EmailRegisterDto extends EmailDto {
 
 export class EmailHashDto {
   @IsString()
-  @MinLength(20)
+  @IsOptional()
+  @MinLength(1)
   @MaxLength(256)
-  hash!: string;
+  hash?: string;
+
+  @IsString()
+  @IsOptional()
+  @MinLength(1)
+  @MaxLength(256)
+  token?: string;
 }
 
 export class EmailResetDto extends EmailHashDto {

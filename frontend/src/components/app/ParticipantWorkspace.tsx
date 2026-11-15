@@ -9,6 +9,8 @@ import { Button, btn } from "./Btn";
 import { Field } from "./AuthShell";
 import { money, sample, verifiedBalance, type Row } from "@/lib/workflow";
 import { financeAdapter, registrationAdapter } from "@/services/api";
+import { useAuth } from "@/services/auth";
+import type { Participant } from "@/lib/programme";
 export const participantSections = [
   { slug: "registration", label: "My registration" },
   { slug: "household", label: "Household" },
@@ -21,14 +23,25 @@ export const participantSections = [
 ];
 export function ParticipantWorkspace({ section }: { section: string }) {
   const { participant, enter } = useParticipant();
+  const { profile } = useAuth();
   const { records, add } = useDemo();
   const [payment, setPayment] = useState(false);
   const [viewReceipt, setViewReceipt] = useState<Row | null>(null);
 
+  const activeParticipant: Participant = participant || {
+    name: profile?.name || "Participant",
+    email: profile?.email || "participant@example.com",
+    activity: "Participant",
+    reference: "QOS-2027-001",
+    household: "HH-001",
+    shares: 1,
+    status: "Approved",
+  };
+
   useEffect(() => {
     let cancelled = false;
     async function loadLiveData() {
-      if (!participant?.reference) return;
+      if (!activeParticipant?.reference) return;
       try {
         const [livePayments] = await Promise.all([
           financeAdapter.myPayments("org_demo", "2027"),
@@ -40,8 +53,8 @@ export function ParticipantWorkspace({ section }: { section: string }) {
             if (!records.payments.some((existing) => existing.id === p.id)) {
               add("payments", {
                 id: p.id,
-                participant: participant.reference || "QOS-2027-001",
-                name: participant.name,
+                participant: activeParticipant.reference || "QOS-2027-001",
+                name: activeParticipant.name,
                 amount: String(p.amountMinor ? p.amountMinor / 100 : p.amount || 0),
                 method: p.method || "Cash",
                 date: p.receivedAt?.slice(0, 10) || "2027-05-10",
@@ -63,12 +76,12 @@ export function ParticipantWorkspace({ section }: { section: string }) {
     return () => {
       cancelled = true;
     };
-  }, [participant?.reference]);
-  if (!participant) return null;
-  const reference = participant.reference || "QOS-2027-001";
+  }, [activeParticipant?.reference]);
+
+  const reference = activeParticipant.reference || "QOS-2027-001";
   const registration = records.participants.find((p) => p.id === reference);
-  const status = registration?.status || participant.status || "Pending review";
-  const shares = Number(registration?.shares || participant.shares || 1);
+  const status = registration?.status || activeParticipant.status || "Pending review";
+  const shares = Number(registration?.shares || activeParticipant.shares || 1);
   const contribution = shares * sample.price;
   const verified = verifiedBalance(records.payments, reference);
   const group = records.groups.find(
@@ -78,11 +91,11 @@ export function ParticipantWorkspace({ section }: { section: string }) {
     (d) => d.recipient === reference && d.status !== "Pending allocation",
   );
   const household = records.households.find(
-    (h) => h.id === (registration?.household || participant.household),
+    (h) => h.id === (registration?.household || activeParticipant.household),
   );
   const title =
     section === "overview"
-      ? `Assalamu Alaikum, ${participant.name.split(" ")[0]}.`
+      ? `Assalamu Alaikum, ${activeParticipant.name.split(" ")[0]}.`
       : participantSections.find((s) => s.slug === section)?.label || "My participation";
   return (
     <>
@@ -148,20 +161,6 @@ export function ParticipantWorkspace({ section }: { section: string }) {
                     : "The committee will review your household, participant details and share request. Approval is required before allocation."}
                 </p>
               </div>
-              <h2 className="mb-4 mt-8 text-xl font-bold">Latest updates</h2>
-              {records.announcements
-                .filter(
-                  (a) =>
-                    a.status === "Published" && ["All users", "Participants"].includes(a.audience),
-                )
-                .slice(0, 2)
-                .map((a) => (
-                  <article key={a.id} className="border-b border-border py-4">
-                    <p className="text-xs text-cobalt">{a.date}</p>
-                    <h3 className="mt-2 font-semibold">{a.title}</h3>
-                    <p className="mt-2 text-sm text-muted-foreground">{a.message}</p>
-                  </article>
-                ))}
             </section>
           </div>
         </>
@@ -174,11 +173,11 @@ export function ParticipantWorkspace({ section }: { section: string }) {
           <dl className="max-w-2xl divide-y divide-border">
             {[
               ["Reference", reference],
-              ["Participant", participant.name],
-              ["Contact", participant.email],
+              ["Participant", activeParticipant.name],
+              ["Contact", activeParticipant.email],
               [
                 "Household",
-                registration?.household || participant.household || "Pending verification",
+                registration?.household || activeParticipant.household || "Pending verification",
               ],
               ["Participation", `${shares} cattle shares`],
               ["Contribution", money(contribution)],
@@ -201,7 +200,7 @@ export function ParticipantWorkspace({ section }: { section: string }) {
             {household?.address || "Submitted household information is awaiting review."}
           </p>
           <p className="mt-3 text-sm">
-            {household?.id || participant.household} · {household?.members || "—"} members
+            {household?.id || activeParticipant.household} · {household?.members || "—"} members
           </p>
           <p className="mt-6 text-xs text-muted-foreground">
             Other family members are not automatically registered through this household record.
@@ -335,15 +334,16 @@ export function ParticipantWorkspace({ section }: { section: string }) {
               e.preventDefault();
               const d = new FormData(e.currentTarget);
               enter({
-                ...participant,
+                ...activeParticipant,
                 name: String(d.get("name")),
                 email: String(d.get("contact")),
+                activity: activeParticipant.activity || "Participant",
               });
-              toast.success("Demo participant profile updated");
+              toast.success("Participant profile preferences saved");
             }}
           >
-            <Field label="Full name" name="name" defaultValue={participant.name} required />
-            <Field label="Contact" name="contact" defaultValue={participant.email} required />
+            <Field label="Full name" name="name" defaultValue={activeParticipant.name} required />
+            <Field label="Contact" name="contact" defaultValue={activeParticipant.email} required />
             <Button>Save profile</Button>
           </form>
           <section>
@@ -381,7 +381,7 @@ export function ParticipantWorkspace({ section }: { section: string }) {
             add("payments", {
               id: `PAY-${records.payments.length + 1}`,
               participant: reference,
-              name: participant.name,
+              name: activeParticipant.name,
               amount: String(amount),
               method,
               date,
@@ -433,7 +433,7 @@ export function ParticipantWorkspace({ section }: { section: string }) {
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground">Received from</p>
-                  <p className="font-medium">{viewReceipt.name || participant.name}</p>
+                  <p className="font-medium">{viewReceipt.name || activeParticipant.name}</p>
                   <p className="font-mono text-xs text-muted-foreground">{reference}</p>
                 </div>
                 <div>

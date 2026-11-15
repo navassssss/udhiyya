@@ -14,11 +14,17 @@ import { UsersService } from '../../users/users.service.js';
 import type { AuthTokenBundle } from '../token-issuer.service.js';
 import type { CreateRegularUserDto } from './brocoders-auth.dto.js';
 
-export function nameParts(input: { firstName: string; lastName: string }) {
-  const firstName = input.firstName.trim();
-  const lastName = input.lastName.trim();
-  if (!firstName || !lastName)
-    throw new BadRequestException('First and last name are required');
+export function nameParts(input: { firstName?: string; lastName?: string; name?: string }) {
+  let firstName = input.firstName?.trim();
+  let lastName = input.lastName?.trim();
+  if ((!firstName || !lastName) && input.name) {
+    const parts = input.name.trim().split(/\s+/);
+    firstName = parts[0] || 'User';
+    lastName = parts.slice(1).join(' ') || 'Account';
+  }
+  if (!firstName || !lastName) {
+    throw new BadRequestException('First and last name (or full name) are required');
+  }
   return { firstName, lastName, name: firstName + ' ' + lastName };
 }
 
