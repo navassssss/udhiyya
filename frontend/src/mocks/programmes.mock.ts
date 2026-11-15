@@ -45,10 +45,8 @@ export type Programme = {
   price: Money;
 };
 
-/** Public projection — includes opaque IDs needed to enter authenticated participant routes. */
+/** Public projection — id, organisationId, registrationLimit are excluded per M2 contract */
 export type PublicProgramme = {
-  id: string;
-  organisationId: string;
   year: number;
   title: string;
   status: ProgrammeStatus;
@@ -187,13 +185,11 @@ export const mockProgrammeDetail: Record<string, Programme> = {
 
 /**
  * GET /public/organisations/:orgId/programmes/:year → PublicProgramme
- * Registration limit remains private; opaque routing IDs are public.
+ * Note: id, organisationId, registrationLimit are NOT returned in the public response.
  */
 export const mockPublicProgrammes: Record<string, Record<number, PublicProgramme>> = {
   org_noor: {
     2027: {
-      id: "prog_noor_2027",
-      organisationId: "org_noor",
       year: 2027,
       title: "Annual Aḍḥiyah Programme 2027",
       status: "published",

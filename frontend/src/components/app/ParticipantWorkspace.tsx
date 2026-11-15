@@ -8,7 +8,7 @@ import { PageTitle, Metrics, Timeline, Status, DataTable, Modal, SelectField } f
 import { Button, btn } from "./Btn";
 import { Field } from "./AuthShell";
 import { money, sample, verifiedBalance, type Row } from "@/lib/workflow";
-import { financeAdapter, publicApi, registrationAdapter } from "@/services/api";
+import { financeAdapter, registrationAdapter } from "@/services/api";
 import { useAuth } from "@/services/auth";
 import type { Participant } from "@/lib/programme";
 export const participantSections = [
@@ -27,7 +27,6 @@ export function ParticipantWorkspace({ section }: { section: string }) {
   const { records, add } = useDemo();
   const [payment, setPayment] = useState(false);
   const [viewReceipt, setViewReceipt] = useState<Row | null>(null);
-  const [liveScope, setLiveScope] = useState<{ orgId: string; programmeId: string } | null>(null);
 
   const activeParticipant: Participant = participant || {
     name: profile?.name || "Participant",
@@ -44,18 +43,9 @@ export function ParticipantWorkspace({ section }: { section: string }) {
     async function loadLiveData() {
       if (!activeParticipant?.reference) return;
       try {
-        const orgId =
-          profile?.orgId ||
-          import.meta.env.VITE_PUBLIC_ORGANISATION_ID ||
-          "e775b56d-38e8-42ee-9a24-9b0e51582ca5";
-        const year = Number(import.meta.env.VITE_PUBLIC_PROGRAMME_YEAR || 2027);
-        const programme = await publicApi.getProgramme(orgId, year);
-        if (!programme.id) throw new Error("Published programme ID is unavailable");
-        const scope = { orgId, programmeId: programme.id };
-        if (!cancelled) setLiveScope(scope);
         const [livePayments] = await Promise.all([
-          financeAdapter.myPayments(scope.orgId, scope.programmeId),
-          registrationAdapter.myRegistration(scope.orgId, scope.programmeId),
+          financeAdapter.myPayments("org_demo", "2027"),
+          registrationAdapter.myRegistration("org_demo", "2027"),
         ]);
         if (cancelled) return;
         if (livePayments?.items && Array.isArray(livePayments.items)) {
@@ -86,7 +76,7 @@ export function ParticipantWorkspace({ section }: { section: string }) {
     return () => {
       cancelled = true;
     };
-  }, [activeParticipant?.reference, profile?.orgId]);
+  }, [activeParticipant?.reference]);
 
   const reference = activeParticipant.reference || "QOS-2027-001";
   const registration = records.participants.find((p) => p.id === reference);
@@ -378,13 +368,8 @@ export function ParticipantWorkspace({ section }: { section: string }) {
             const date = String(d.get("date"));
             const refNote = String(d.get("reference") || "");
 
-            if (!liveScope) {
-              toast.error("Programme is still loading. Please try again.");
-              return;
-            }
-
             financeAdapter
-              .recordPayment(liveScope.orgId, liveScope.programmeId, {
+              .recordPayment("org_demo", "2027", {
                 registrationId: reference,
                 amount: { amount, currency: "INR" },
                 method: method.toLowerCase().replace(/\s+/g, "_") as any,

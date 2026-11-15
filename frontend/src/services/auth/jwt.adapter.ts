@@ -37,20 +37,11 @@ function mapNestJsRole(user: any): UserRole {
 
 function userToProfile(user: any): AuthUserProfile {
   const role = mapNestJsRole(user);
-  const orgId =
-    user.activeOrganisationId ||
-    user.activeOrganizationId ||
-    user.organisation?.id ||
-    user.organisations?.[0]?.id;
   return {
     id: user.id || "usr_jwt",
     email: user.email || "",
     role,
-    orgId:
-      orgId ||
-      (role !== "super_admin"
-        ? import.meta.env.VITE_PUBLIC_ORGANISATION_ID || "e775b56d-38e8-42ee-9a24-9b0e51582ca5"
-        : undefined),
+    orgId: user.activeOrganizationId || (role !== "super_admin" ? "e775b56d-38e8-42ee-9a24-9b0e51582ca5" : undefined),
     name:
       user.name ||
       [user.firstName, user.lastName].filter(Boolean).join(" ") ||
