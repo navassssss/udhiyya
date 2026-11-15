@@ -125,16 +125,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     return null;
   });
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(AUTH_PROVIDER === "nestjs");
 
   useEffect(() => {
     if (AUTH_PROVIDER === "nestjs") {
-      jwtAdapter.getMe().then((p) => {
-        if (p) {
-          setProfile(p);
-          sessionStorage.setItem("qurbani_auth_profile", JSON.stringify(p));
-        }
-      });
+      jwtAdapter
+        .getMe()
+        .then((p) => {
+          if (p) {
+            setProfile(p);
+            sessionStorage.setItem("qurbani_auth_profile", JSON.stringify(p));
+          } else {
+            setProfile(null);
+            sessionStorage.removeItem("qurbani_auth_profile");
+          }
+        })
+        .finally(() => setLoading(false));
       return;
     }
 

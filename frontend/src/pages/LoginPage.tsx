@@ -1,5 +1,5 @@
 import { useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   ArrowRight,
   Mail,
@@ -28,8 +28,32 @@ export function LoginPage({ initialMode }: { initialMode?: AuthMode } = {}) {
   const [fullName, setFullName] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
-  const { signIn, signUp, resetPassword, activeProvider } = useAuth();
+  const { profile, loading, signIn, signUp, resetPassword, activeProvider } = useAuth();
   const nav = useNavigate();
+
+  const redirectForRole = useCallback((r: UserRole) => {
+    switch (r) {
+      case "super_admin":
+        nav({ to: "/super-admin/$section", params: { section: "organisations" }, replace: true });
+        break;
+      case "committee_admin":
+        nav({ to: "/admin/$section", params: { section: "dashboard" }, replace: true });
+        break;
+      case "volunteer":
+        nav({ to: "/volunteer/$section", params: { section: "home" }, replace: true });
+        break;
+      case "participant":
+      default:
+        nav({ to: "/participant/$section", params: { section: "overview" }, replace: true });
+        break;
+    }
+  }, [nav]);
+
+  useEffect(() => {
+    if (mode === "signin" && !loading && profile) {
+      redirectForRole(profile.role);
+    }
+  }, [loading, mode, profile, redirectForRole]);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -88,24 +112,6 @@ export function LoginPage({ initialMode }: { initialMode?: AuthMode } = {}) {
     } catch (err: any) {
       setSubmitting(false);
       toast.error(err.message || "An unexpected authentication error occurred");
-    }
-  };
-
-  const redirectForRole = (r: UserRole) => {
-    switch (r) {
-      case "super_admin":
-        nav({ to: "/super-admin/$section", params: { section: "organisations" } });
-        break;
-      case "committee_admin":
-        nav({ to: "/admin/$section", params: { section: "dashboard" } });
-        break;
-      case "volunteer":
-        nav({ to: "/volunteer/$section", params: { section: "home" } });
-        break;
-      case "participant":
-      default:
-        nav({ to: "/participant/$section", params: { section: "overview" } });
-        break;
     }
   };
 
